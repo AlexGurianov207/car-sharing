@@ -51,13 +51,13 @@ public class CarService {
         if (status != null && !status.isEmpty()) {
             cars = cars.stream()
                     .filter(car -> status.equals(car.getStatus()))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         // Преобразуем все машины в DTO
         return cars.stream()
                 .map(carMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // Обновление статуса машины
