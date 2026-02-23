@@ -10,5 +10,5 @@ public class CarResponse {
     private String model;
     private int year;
     private double pricePerHour;
-    private String Status;
+    private String status;
 }
