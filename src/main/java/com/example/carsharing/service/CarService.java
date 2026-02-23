@@ -6,7 +6,6 @@ import com.example.carsharing.model.Car;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.service.mapper.CarMapper;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -72,9 +71,9 @@ public class CarService {
     }
 
     // Удаление машины
-    public void deleteCar(Long id) {
+    public void deleteCar(Long id) throws NoSuchFieldException {
         if (!carRepository.findById(id).isPresent()) {
-            throw new RuntimeException("Car not found with id: " + id);
+            throw new NoSuchFieldException("Car not found with id: " + id);
         }
         carRepository.deleteById(id);
     }

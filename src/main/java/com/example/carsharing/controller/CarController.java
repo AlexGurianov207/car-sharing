@@ -60,7 +60,7 @@ public class CarController {
     // Пример: DELETE /api/cars/1
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)  // Возвращаем статус 204 No Content
-    public void deleteCar(@PathVariable Long id) {
+    public void deleteCar(@PathVariable Long id) throws NoSuchFieldException {
         carService.deleteCar(id);
     }
 }
