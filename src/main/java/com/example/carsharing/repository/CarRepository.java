@@ -13,6 +13,4 @@ public interface CarRepository {
     List<Car> findAll();
 
     Optional<Car> findByLicensePlate(String licensePlate);
-
-    void deleteById(Long id);
 }

@@ -5,7 +5,10 @@ import com.example.carsharing.dto.CarResponse;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.service.mapper.CarMapper;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,11 +20,13 @@ public class CarService {
     private final CarMapper carMapper;
 
     public CarResponse createCar(CarCreateRequest request) {
-        carRepository.findByLicensePlate(request.getLicensePlate())
-                .ifPresent(car -> {
-                    throw new IllegalArgumentException("Car with license plate " +
-                            request.getLicensePlate() + " already exists");
-                });
+        Optional<Car> existingCar =
+                carRepository.findByLicensePlate(request.getLicensePlate());
+
+        if (existingCar.isPresent()) {
+            throw new IllegalArgumentException("Car with license plate " +
+                    request.getLicensePlate() + " already exists");
+        }
 
         Car car = carMapper.toEntity(request);
 
@@ -31,39 +36,38 @@ public class CarService {
     }
 
     public CarResponse findById(Long id) {
-        Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
+        Optional<Car> optionalCar = carRepository.findById(id);
+
+        if (!optionalCar.isPresent()) {
+            return  null;
+        }
+
+        Car car = optionalCar.get();
         return carMapper.toResponse(car);
     }
 
-    public List<CarResponse> findAll(String status) {
+    public List<CarResponse> findAll() {
         List<Car> cars = carRepository.findAll();
+        List<CarResponse> responses = new ArrayList<>();
 
-        if (status != null && !status.isEmpty()) {
-            cars = cars.stream()
-                    .filter(car -> status.equals(car.getStatus()))
-                    .toList();
+        for (Car car : cars) {
+            responses.add(carMapper.toResponse(car));
         }
 
-        return cars.stream()
-                .map(carMapper::toResponse)
-                .toList();
+        return responses;
     }
 
-    public CarResponse updateStatus(Long id, String status) {
-        Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
+    public List<CarResponse> findByBrand(String brand) {
+        List<Car> cars = carRepository.findAll();
+        List<CarResponse> responses = new ArrayList<>();
 
-        car.setStatus(status);
-        Car updatedCar = carRepository.save(car);
-
-        return carMapper.toResponse(updatedCar);
-    }
-
-    public void deleteCar(Long id) throws NoSuchFieldException {
-        if (!carRepository.findById(id).isPresent()) {
-            throw new NoSuchFieldException("Car not found with id: " + id);
+        for (Car car : cars) {
+            if (brand.equalsIgnoreCase(car.getBrand())) {
+                responses.add(carMapper.toResponse(car));
+            }
         }
-        carRepository.deleteById(id);
+
+        return responses;
     }
+
 }

@@ -33,7 +33,11 @@ public class InMemoryCarRepository implements CarRepository {
 
     @Override
     public Optional<Car> findById(Long id) {
-        return Optional.ofNullable(storage.get(id));
+        Car car = storage.get(id);
+        if (car == null) {
+            return Optional.empty();
+        }
+        return Optional.of(car);
     }
 
     @Override
@@ -43,13 +47,12 @@ public class InMemoryCarRepository implements CarRepository {
 
     @Override
     public Optional<Car> findByLicensePlate(String licensePlate) {
-        return storage.values().stream()
-                .filter(car -> car.getLicensePlate().equals(licensePlate))
-                .findFirst();
+        for (Car car : storage.values()) {
+            if (car.getLicensePlate().equals(licensePlate)) {
+                return Optional.of(car);
+            }
+        }
+        return Optional.empty();
     }
 
-    @Override
-    public void deleteById(Long id) {
-        storage.remove(id);
-    }
 }
