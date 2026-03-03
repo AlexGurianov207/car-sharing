@@ -20,14 +20,6 @@ public class CarService {
     private final CarMapper carMapper;
 
     public CarResponse createCar(CarCreateRequest request) {
-        Optional<Car> existingCar =
-                carRepository.findByLicensePlate(request.getLicensePlate());
-
-        if (existingCar.isPresent()) {
-            throw new IllegalArgumentException("Car with license plate " +
-                    request.getLicensePlate() + " already exists");
-        }
-
         Car car = carMapper.toEntity(request);
 
         Car savedCar = carRepository.save(car);
