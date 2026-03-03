@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/car_sharing
     username: postgres
-    password: your_password_here  # пароль, который ставили при установке
+    password: Pro100SQLGur
     driver-class-name: org.postgresql.Driver
 
   # Настройки JPA/Hibernate
