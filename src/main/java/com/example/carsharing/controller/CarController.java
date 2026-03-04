@@ -25,7 +25,7 @@ public class CarController {
     private final CarService carService;
 
     @GetMapping
-    public ResponseEntity<List<CarResponse>> getRestaurants(
+    public ResponseEntity<List<CarResponse>> getCars(
             @RequestParam(value = "brand", required = false) String brand) {
 
         List<CarResponse> cars;
