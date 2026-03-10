@@ -14,7 +14,6 @@ public class PaymentMapper {
         Payment payment = new Payment();
         payment.setRental(rental);
         payment.setUser(user);
-        payment.setAmount(request.getAmount());
         payment.setPaymentMethod(request.getPaymentMethod());
         payment.setTransactionId(request.getTransactionId());
         return payment;
@@ -27,10 +26,28 @@ public class PaymentMapper {
         response.setUserId(payment.getUser().getId());
         response.setUserFullName(payment.getUser().getFirstName() + " " + payment.getUser().getLastName());
         response.setAmount(payment.getAmount());
+        response.setCarAmount(payment.getCarAmount());           // ✅ добавить
+        response.setServicesAmount(payment.getServicesAmount());
         response.setPaymentDate(payment.getPaymentDate());
         response.setPaymentMethod(payment.getPaymentMethod());
         response.setStatus(payment.getStatus());
         response.setTransactionId(payment.getTransactionId());
+
+        // ✅ добавить информацию об аренде
+        if (payment.getRental() != null) {
+            response.setCarInfo(payment.getRental().getCar().getBrand() + " " +
+                    payment.getRental().getCar().getModel());
+            response.setRentalStartTime(payment.getRental().getStartTime());
+            response.setRentalEndTime(payment.getRental().getEndTime());
+            if (payment.getRental().getEndTime() != null) {
+                long hours = java.time.Duration.between(
+                        payment.getRental().getStartTime(),
+                        payment.getRental().getEndTime()
+                ).toHours();
+                response.setRentalHours(hours < 1 ? 1 : hours);
+            }
+        }
+
         return response;
     }
 }

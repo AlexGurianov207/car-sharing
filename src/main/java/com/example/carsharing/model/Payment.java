@@ -22,7 +22,13 @@ public class Payment {
     private User user;
 
     @Column(nullable = false)
-    private Double amount;
+    private Double amount;  // Общая сумма
+
+    @Column(name = "car_amount", nullable = false)
+    private Double carAmount;  // Сумма за машину
+
+    @Column(name = "services_amount", nullable = false)
+    private Double servicesAmount;  // Сумма за услуги
 
     @Column(name = "payment_date", nullable = false)
     private LocalDateTime paymentDate;

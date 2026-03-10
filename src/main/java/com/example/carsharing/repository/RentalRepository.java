@@ -1,6 +1,7 @@
 package com.example.carsharing.repository;
 
 import com.example.carsharing.model.Rental;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,6 +26,11 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     // Проверяем, арендована ли машина в данный момент
     boolean existsByCarIdAndEndTimeIsNull(Long carId);
+
+    // ✅ ИСПРАВЛЕНО: метод должен называться findAll (это встроенный метод)
+    // а @EntityGraph просто добавляем к нему
+    @EntityGraph(attributePaths = {"user", "car", "selectedServices"})
+    List<Rental> findAll();
 
     // Сложный запрос с JPQL (Java Persistence Query Language)
     @Query("SELECT r FROM Rental r WHERE r.car.id = :carId AND " +

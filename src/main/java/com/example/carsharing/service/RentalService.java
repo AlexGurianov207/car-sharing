@@ -3,9 +3,11 @@ package com.example.carsharing.service;
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
 import com.example.carsharing.model.Car;
+import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.User;
 import com.example.carsharing.repository.CarRepository;
+import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.repository.RentalRepository;
 import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.RentalMapper;
@@ -24,6 +26,7 @@ public class RentalService {
     private final RentalRepository rentalRepository;
     private final UserRepository userRepository;
     private final CarRepository carRepository;
+    private final ExtraServiceRepository extraServiceRepository;  // НОВОЕ
     private final RentalMapper rentalMapper;
 
     public RentalResponse createRental(RentalCreateRequest request) {
@@ -52,6 +55,19 @@ public class RentalService {
 
         // Создаем аренду
         Rental rental = rentalMapper.toEntity(request, user, car);
+
+        // НОВОЕ: Добавляем выбранные услуги
+        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
+            List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
+            // Проверяем, что все услуги доступны у этой машины
+            for (ExtraService service : services) {
+                if (!car.getAvailableServices().contains(service)) {
+                    throw new RuntimeException("Service " + service.getName() + " is not available for this car");
+                }
+            }
+            rental.setSelectedServices(services);
+        }
+
         Rental savedRental = rentalRepository.save(rental);
 
         // Меняем статус машины
@@ -73,10 +89,6 @@ public class RentalService {
         rental.setEndTime(LocalDateTime.now());
         rental.setStatus("COMPLETED");
 
-        // Здесь должен быть расчет стоимости на основе тарифа
-        // Для простоты ставим фиксированную цену
-        rental.setTotalPrice(100.0);
-
         // Освобождаем машину
         Car car = rental.getCar();
         car.setStatus("AVAILABLE");
@@ -84,6 +96,24 @@ public class RentalService {
 
         Rental updatedRental = rentalRepository.save(rental);
         return rentalMapper.toResponse(updatedRental);
+    }
+
+    // НОВОЕ: Метод для демонстрации N+1 проблемы
+    public List<RentalResponse> getAllRentalsWithNPlus1Problem() {
+        // Этот метод будет демонстрировать проблему N+1
+        // (детали реализации добавим позже)
+        return rentalRepository.findAll().stream()
+                .map(rentalMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // НОВОЕ: Метод с решением N+1 проблемы через @EntityGraph
+    public List<RentalResponse> getAllRentalsWithDetails() {
+        // Этот метод будет использовать @EntityGraph
+        // (детали реализации добавим позже)
+        return rentalRepository.findAll().stream()
+                .map(rentalMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     public RentalResponse cancelRental(Long id) {

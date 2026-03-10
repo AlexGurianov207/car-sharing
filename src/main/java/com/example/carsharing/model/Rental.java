@@ -1,9 +1,26 @@
 package com.example.carsharing.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 import java.time.LocalDateTime;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "rentals")
@@ -28,16 +45,24 @@ public class Rental {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    @Column(name = "total_price")
-    private Double totalPrice;
+    // УДАЛЕНО: totalPrice - теперь только в Payment
 
     @Column(nullable = false, length = 20)
-    private String status;
+    private String status;  // ACTIVE, COMPLETED, CANCELLED
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    // Связь с платежом: одна аренда может иметь один платеж
+    // НОВОЕ: Выбранные услуги для этой аренды
+    @ManyToMany
+    @JoinTable(
+            name = "rental_selected_services",
+            joinColumns = @JoinColumn(name = "rental_id"),
+            inverseJoinColumns = @JoinColumn(name = "service_id")
+    )
+    @ToString.Exclude
+    private List<ExtraService> selectedServices = new ArrayList<>();
+
     @OneToOne(mappedBy = "rental", cascade = CascadeType.ALL)
     @ToString.Exclude
     private Payment payment;
@@ -45,7 +70,60 @@ public class Rental {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        startTime = LocalDateTime.now();
-        status = "ACTIVE";
+        if (startTime == null) {
+            startTime = LocalDateTime.now();
+        }
+        if (status == null) {
+            status = "ACTIVE";
+        }
+    }
+
+    // НОВОЕ: Метод для расчета стоимости аренды
+    public Double calculateTotalPrice() {
+        if (endTime == null) return null;
+
+        long hours = Duration.between(startTime, endTime).toHours();
+        if (hours < 1) hours = 1; // Минимум 1 час
+
+        // Стоимость машины
+        double carPrice = car.getPricePerHour() * hours;
+
+        // Стоимость услуг (услуги тарифицируются посуточно)
+        long finalHours = hours;
+        double servicesPrice = selectedServices.stream()
+                .mapToDouble(service -> {
+                    long days = (finalHours / 24) + (((finalHours % 24) == 0) ? 0 : 1);
+                    return service.getPricePerDay() * days;
+                })
+                .sum();
+
+        return carPrice + servicesPrice;
+    }
+
+    // НОВОЕ: Метод для получения детализации стоимости
+    public PriceDetails getPriceDetails() {
+        if (endTime == null) return null;
+
+        long hours = Duration.between(startTime, endTime).toHours();
+        if (hours < 1) hours = 1;
+        long days = hours / 24 + (hours % 24 == 0 ? 0 : 1);
+
+        double carPrice = car.getPricePerHour() * hours;
+        double servicesPrice = selectedServices.stream()
+                .mapToDouble(s -> s.getPricePerDay() * days)
+                .sum();
+
+        return new PriceDetails(carPrice, servicesPrice, carPrice + servicesPrice, hours, days);
+    }
+
+    // Внутренний класс для детализации цены
+    @Data
+    @AllArgsConstructor
+    public static class PriceDetails {
+        private double carAmount;
+        private double servicesAmount;
+        private double totalAmount;
+        private long rentalHours;
+        private long rentalDays;
     }
 }

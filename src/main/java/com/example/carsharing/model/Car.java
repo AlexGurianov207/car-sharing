@@ -1,21 +1,30 @@
 package com.example.carsharing.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.ToString;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity  // Говорит JPA, что это сущность для таблицы в БД
-@Table(name = "cars")  // Имя таблицы в БД
+@Entity
+@Table(name = "cars")
 @Data
 public class Car {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)  // AUTO_INCREMENT в БД
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)  // NOT NULL, VARCHAR(50)
+    @Column(nullable = false, length = 50)
     private String brand;
 
     @Column(nullable = false, length = 50)
@@ -33,8 +42,18 @@ public class Car {
     @Column(name = "price_per_hour", nullable = false)
     private Double pricePerHour;
 
-    // Связь с арендами: одна машина может быть арендована много раз
-    @OneToMany(mappedBy = "car", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude  // Чтобы избежать зацикливания при выводе
+    // Убрали cascade = CascadeType.ALL, orphanRemoval = true
+    @OneToMany(mappedBy = "car")
+    @ToString.Exclude
     private List<Rental> rentals = new ArrayList<>();
+
+    // НОВОЕ: Доступные дополнительные услуги для этой машины
+    @ManyToMany
+    @JoinTable(
+            name = "car_available_services",
+            joinColumns = @JoinColumn(name = "car_id"),
+            inverseJoinColumns = @JoinColumn(name = "service_id")
+    )
+    @ToString.Exclude
+    private List<ExtraService> availableServices = new ArrayList<>();
 }

@@ -3,9 +3,11 @@ package com.example.carsharing.service.mapper;
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
 import com.example.carsharing.model.Car;
+import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.User;
 import org.springframework.stereotype.Component;
+import java.util.stream.Collectors;
 
 @Component
 public class RentalMapper {
@@ -31,9 +33,42 @@ public class RentalMapper {
                 rental.getCar().getLicensePlate() + ")");
         response.setStartTime(rental.getStartTime());
         response.setEndTime(rental.getEndTime());
-        response.setTotalPrice(rental.getTotalPrice());
         response.setStatus(rental.getStatus());
         response.setCreatedAt(rental.getCreatedAt());
+
+        // НОВОЕ: Маппинг выбранных услуг
+        if (rental.getSelectedServices() != null) {
+            response.setSelectedServices(
+                    rental.getSelectedServices().stream()
+                            .map(this::mapService)
+                            .collect(Collectors.toList())
+            );
+        }
+
+        // НОВОЕ: Маппинг деталей цены
+        if (rental.getEndTime() != null) {
+            Rental.PriceDetails priceDetails = rental.getPriceDetails();
+            if (priceDetails != null) {
+                RentalResponse.PriceDetails details = new RentalResponse.PriceDetails();
+                details.setCarAmount(priceDetails.getCarAmount());
+                details.setServicesAmount(priceDetails.getServicesAmount());
+                details.setTotalAmount(priceDetails.getTotalAmount());
+                details.setRentalHours(priceDetails.getRentalHours());
+                details.setRentalDays(priceDetails.getRentalDays());
+                response.setPriceDetails(details);
+            }
+        }
+
         return response;
+    }
+
+    // НОВОЕ: Вспомогательный метод для маппинга услуги
+    private RentalResponse.ServiceInfo mapService(ExtraService service) {
+        RentalResponse.ServiceInfo info = new RentalResponse.ServiceInfo();
+        info.setId(service.getId());
+        info.setName(service.getName());
+        info.setPricePerDay(service.getPricePerDay());
+        info.setCategory(service.getCategory());
+        return info;
     }
 }

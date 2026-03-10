@@ -2,6 +2,8 @@ package com.example.carsharing.dto;
 
 import lombok.Data;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class RentalCreateRequest {
@@ -13,5 +15,8 @@ public class RentalCreateRequest {
     private Long carId;
 
     // Можно указать конкретное время начала, иначе будет сейчас
-    private java.time.LocalDateTime startTime;
+    private LocalDateTime startTime;
+
+    // НОВОЕ: ID выбранных дополнительных услуг
+    private List<Long> serviceIds;
 }

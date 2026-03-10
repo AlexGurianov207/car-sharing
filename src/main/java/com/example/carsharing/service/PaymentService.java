@@ -31,6 +31,11 @@ public class PaymentService {
         Rental rental = rentalRepository.findById(request.getRentalId())
                 .orElseThrow(() -> new RuntimeException("Rental not found with id: " + request.getRentalId()));
 
+        // Проверяем, завершена ли аренда
+        if (!"COMPLETED".equals(rental.getStatus())) {
+            throw new RuntimeException("Cannot create payment for incomplete rental. Status: " + rental.getStatus());
+        }
+
         // Проверяем, не оплачена ли уже эта аренда
         if (paymentRepository.existsByRentalId(request.getRentalId())) {
             throw new RuntimeException("Payment already exists for rental: " + request.getRentalId());
@@ -40,15 +45,37 @@ public class PaymentService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
+        // НОВОЕ: Получаем детализацию цены из аренды
+        Rental.PriceDetails priceDetails = rental.getPriceDetails();
+        if (priceDetails == null) {
+            throw new RuntimeException("Cannot calculate price for rental: " + request.getRentalId());
+        }
+
         // Генерируем transactionId, если не указан
         if (request.getTransactionId() == null || request.getTransactionId().isEmpty()) {
             request.setTransactionId("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         }
 
         Payment payment = paymentMapper.toEntity(request, rental, user);
-        Payment savedPayment = paymentRepository.save(payment);
+        payment.setAmount(priceDetails.getTotalAmount());
+        payment.setCarAmount(priceDetails.getCarAmount());
+        payment.setServicesAmount(priceDetails.getServicesAmount());
 
+        Payment savedPayment = paymentRepository.save(payment);
         return paymentMapper.toResponse(savedPayment);
+    }
+
+    // НОВОЕ: Метод для демонстрации транзакций (частичное сохранение)
+    public void createPaymentWithoutTransaction(PaymentCreateRequest request) {
+        // Этот метод БЕЗ @Transactional покажет частичное сохранение
+        // (детали добавим позже)
+    }
+
+    // НОВОЕ: Метод для демонстрации транзакций (полный откат)
+    @Transactional
+    public void createPaymentWithTransaction(PaymentCreateRequest request) {
+        // Этот метод С @Transactional покажет полный откат
+        // (детали добавим позже)
     }
 
     public PaymentResponse getPaymentById(Long id) {
