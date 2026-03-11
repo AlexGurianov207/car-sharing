@@ -154,7 +154,8 @@ public class RentalService {
 
     public List<RentalResponse> demonstrateNPlus1Problem() {
         System.out.println("========== ДЕМОНСТРАЦИЯ N+1 ПРОБЛЕМЫ ==========");
-        List<Rental> rentals = rentalRepository.findAll();
+        // ВЫЗЫВАЕМ МЕДЛЕННЫЙ МЕТОД
+        List<Rental> rentals = rentalRepository.findAllSlow();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
                 .collect(Collectors.toList());
@@ -164,6 +165,7 @@ public class RentalService {
 
     public List<RentalResponse> demonstrateSolutionWithEntityGraph() {
         System.out.println("========== РЕШЕНИЕ N+1 ПРОБЛЕМЫ ==========");
+        // ВЫЗЫВАЕМ БЫСТРЫЙ МЕТОД
         List<Rental> rentals = rentalRepository.findAll();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)

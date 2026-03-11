@@ -24,7 +24,10 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     boolean existsByCarIdAndEndTimeIsNull(Long carId);
 
-    @EntityGraph(attributePaths = {"user", "car", "selectedServices"})
+    @Query("SELECT r FROM Rental r")
+    List<Rental> findAllSlow();
+
+    @EntityGraph(attributePaths = {"user", "car", "selectedServices", "payment"})
     List<Rental> findAll();
 
     @Query("SELECT r FROM Rental r WHERE r.car.id = :carId AND " +
