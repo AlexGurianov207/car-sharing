@@ -76,10 +76,14 @@ public class Rental {
     }
 
     public Double calculateTotalPrice() {
-        if (endTime == null) return null;
+        if (endTime == null) {
+            return null;
+        }
 
         long hours = Duration.between(startTime, endTime).toHours();
-        if (hours < 1) hours = 1;
+        if (hours < 1) {
+            hours = 1;
+        }
 
         double carPrice = car.getPricePerHour() * hours;
 
@@ -95,10 +99,14 @@ public class Rental {
     }
 
     public PriceDetails getPriceDetails() {
-        if (endTime == null) return null;
+        if (endTime == null) {
+            return null;
+        }
 
         long hours = Duration.between(startTime, endTime).toHours();
-        if (hours < 1) hours = 1;
+        if (hours < 1) {
+            hours = 1;
+        }
         long days = hours / 24 + (hours % 24 == 0 ? 0 : 1);
 
         double carPrice = car.getPricePerHour() * hours;

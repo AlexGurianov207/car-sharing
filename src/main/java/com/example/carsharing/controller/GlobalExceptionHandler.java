@@ -35,5 +35,5 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    record ErrorResponse(int status, String message, LocalDateTime timestamp) {}
+    record ErrorResponse(int status, String message, LocalDateTime timestamp) { }
 }
