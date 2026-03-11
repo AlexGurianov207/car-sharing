@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class RentalService {
 
     private final RentalRepository rentalRepository;
@@ -29,6 +28,7 @@ public class RentalService {
     private final ExtraServiceRepository extraServiceRepository;  // НОВОЕ
     private final RentalMapper rentalMapper;
 
+    @Transactional
     public RentalResponse createRental(RentalCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
@@ -68,6 +68,7 @@ public class RentalService {
         return rentalMapper.toResponse(savedRental);
     }
 
+    @Transactional
     public RentalResponse completeRental(Long id) {
         Rental rental = rentalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Rental not found with id: " + id));
