@@ -25,16 +25,16 @@ public class ExtraService {
     private Long id;
 
     @Column(nullable = false, length = 50)
-    private String name;  // "Детское кресло", "Навигатор", "Страховка"
+    private String name;
 
     @Column(length = 200)
     private String description;
 
     @Column(name = "price_per_day", nullable = false)
-    private Double pricePerDay;  // цена за сутки использования
+    private Double pricePerDay;
 
     @Column(nullable = false, length = 30)
-    private String category;  // SAFETY, COMFORT, EQUIPMENT
+    private String category;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -42,12 +42,10 @@ public class ExtraService {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    // Связь с автомобилями, которые предлагают эту услугу
     @ManyToMany(mappedBy = "availableServices")
     @ToString.Exclude
     private List<Car> cars = new ArrayList<>();
 
-    // Связь с арендами, которые выбрали эту услугу
     @ManyToMany(mappedBy = "selectedServices")
     @ToString.Exclude
     private List<Rental> rentals = new ArrayList<>();

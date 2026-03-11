@@ -26,14 +26,13 @@ public class PaymentMapper {
         response.setUserId(payment.getUser().getId());
         response.setUserFullName(payment.getUser().getFirstName() + " " + payment.getUser().getLastName());
         response.setAmount(payment.getAmount());
-        response.setCarAmount(payment.getCarAmount());           // ✅ добавить
+        response.setCarAmount(payment.getCarAmount());
         response.setServicesAmount(payment.getServicesAmount());
         response.setPaymentDate(payment.getPaymentDate());
         response.setPaymentMethod(payment.getPaymentMethod());
         response.setStatus(payment.getStatus());
         response.setTransactionId(payment.getTransactionId());
 
-        // ✅ добавить информацию об аренде
         if (payment.getRental() != null) {
             response.setCarInfo(payment.getRental().getCar().getBrand() + " " +
                     payment.getRental().getCar().getModel());

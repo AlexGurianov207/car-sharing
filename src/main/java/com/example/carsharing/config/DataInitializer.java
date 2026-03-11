@@ -24,7 +24,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Создаем машины
+
         if (carRepository.count() == 0) {
             Car car1 = new Car();
             car1.setBrand("Toyota");
@@ -45,7 +45,6 @@ public class DataInitializer implements CommandLineRunner {
             carRepository.save(car2);
         }
 
-        // Создаем пользователей
         if (userRepository.count() == 0) {
             User user1 = new User();
             user1.setFirstName("Иван");
@@ -66,7 +65,6 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(user2);
         }
 
-        // Создаем аренду и платеж для примера
         if (rentalRepository.count() == 0 && paymentRepository.count() == 0) {
             User user = userRepository.findAll().get(0);
             Car car = carRepository.findAll().get(0);
@@ -78,7 +76,6 @@ public class DataInitializer implements CommandLineRunner {
             rental.setEndTime(LocalDateTime.now().minusHours(1));
             rental.setStatus("COMPLETED");
 
-            // Расчет цены сделаем позже, когда добавим ExtraService
             Rental savedRental = rentalRepository.save(rental);
 
             car.setStatus("AVAILABLE");

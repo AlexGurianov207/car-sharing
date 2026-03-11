@@ -10,16 +10,14 @@ public class RentalResponse {
     private Long userId;
     private String userFullName;
     private Long carId;
-    private String carInfo;  // Например: "BMW X5 (A123BC)"
+    private String carInfo;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String status;
     private LocalDateTime createdAt;
 
-    // НОВОЕ: Информация о выбранных услугах
     private List<ServiceInfo> selectedServices;
 
-    // НОВОЕ: Детализация цен (будет null, если аренда не завершена)
     private PriceDetails priceDetails;
 
     @Data

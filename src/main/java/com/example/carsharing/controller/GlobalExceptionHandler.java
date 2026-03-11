@@ -35,6 +35,5 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    // Внутренний класс для формата ошибки
     record ErrorResponse(int status, String message, LocalDateTime timestamp) {}
 }

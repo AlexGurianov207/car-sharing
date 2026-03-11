@@ -18,7 +18,7 @@ public class ExtraServiceCreateRequest {
     private Double pricePerDay;
 
     @NotBlank(message = "Category is required")
-    private String category;  // SAFETY, COMFORT, EQUIPMENT, INSURANCE
+    private String category;
 
     private Boolean isActive;
 }

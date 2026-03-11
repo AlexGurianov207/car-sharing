@@ -14,9 +14,7 @@ public class RentalCreateRequest {
     @NotNull(message = "Car ID is required")
     private Long carId;
 
-    // Можно указать конкретное время начала, иначе будет сейчас
     private LocalDateTime startTime;
 
-    // НОВОЕ: ID выбранных дополнительных услуг
     private List<Long> serviceIds;
 }

@@ -13,19 +13,17 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional  // Все методы сервиса будут транзакционными
+@Transactional
 public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
     public UserResponse createUser(UserCreateRequest request) {
-        // Проверяем уникальность email
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("User with email " + request.getEmail() + " already exists");
         }
 
-        // Проверяем уникальность водительских прав
         if (userRepository.existsByDriverLicense(request.getDriverLicense())) {
             throw new RuntimeException("User with driver license " + request.getDriverLicense() + " already exists");
         }
@@ -57,11 +55,9 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
-        // Обновляем поля
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhoneNumber(request.getPhoneNumber());
-        // Email и водительские права обычно не меняем, но если надо - проверяем уникальность
 
         User updatedUser = userRepository.save(user);
         return userMapper.toResponse(updatedUser);
@@ -75,7 +71,6 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        // Мягкое удаление - меняем статус, а не удаляем из БД
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
         user.setStatus("DELETED");

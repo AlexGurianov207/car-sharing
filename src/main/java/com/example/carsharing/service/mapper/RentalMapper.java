@@ -36,7 +36,6 @@ public class RentalMapper {
         response.setStatus(rental.getStatus());
         response.setCreatedAt(rental.getCreatedAt());
 
-        // НОВОЕ: Маппинг выбранных услуг
         if (rental.getSelectedServices() != null) {
             response.setSelectedServices(
                     rental.getSelectedServices().stream()
@@ -45,7 +44,6 @@ public class RentalMapper {
             );
         }
 
-        // НОВОЕ: Маппинг деталей цены
         if (rental.getEndTime() != null) {
             Rental.PriceDetails priceDetails = rental.getPriceDetails();
             if (priceDetails != null) {
@@ -62,7 +60,6 @@ public class RentalMapper {
         return response;
     }
 
-    // НОВОЕ: Вспомогательный метод для маппинга услуги
     private RentalResponse.ServiceInfo mapService(ExtraService service) {
         RentalResponse.ServiceInfo info = new RentalResponse.ServiceInfo();
         info.setId(service.getId());

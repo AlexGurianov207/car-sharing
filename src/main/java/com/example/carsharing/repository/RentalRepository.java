@@ -18,21 +18,15 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     List<Rental> findByStatus(String status);
 
-    // Находим все активные аренды (без endTime)
     List<Rental> findByEndTimeIsNull();
 
-    // Находим аренды пользователя с определенным статусом
     List<Rental> findByUserIdAndStatus(Long userId, String status);
 
-    // Проверяем, арендована ли машина в данный момент
     boolean existsByCarIdAndEndTimeIsNull(Long carId);
 
-    // ✅ ИСПРАВЛЕНО: метод должен называться findAll (это встроенный метод)
-    // а @EntityGraph просто добавляем к нему
     @EntityGraph(attributePaths = {"user", "car", "selectedServices"})
     List<Rental> findAll();
 
-    // Сложный запрос с JPQL (Java Persistence Query Language)
     @Query("SELECT r FROM Rental r WHERE r.car.id = :carId AND " +
             "((r.startTime BETWEEN :start AND :end) OR " +
             "(r.endTime BETWEEN :start AND :end) OR " +

@@ -44,12 +44,10 @@ public class User {
     @Column(nullable = false, length = 20)
     private String status;  // ACTIVE, BLOCKED, DELETED
 
-    // Связь с арендами: один пользователь может арендовать много машин
-    @OneToMany(mappedBy = "user")  // убираем cascade и orphanRemoval
+    @OneToMany(mappedBy = "user")
     @ToString.Exclude
     private List<Rental> rentals = new ArrayList<>();
 
-    // Метод, который выполнится перед сохранением в БД
     @PrePersist
     protected void onCreate() {
         registrationDate = LocalDateTime.now();

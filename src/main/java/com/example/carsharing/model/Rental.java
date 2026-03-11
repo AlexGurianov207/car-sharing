@@ -45,15 +45,12 @@ public class Rental {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    // УДАЛЕНО: totalPrice - теперь только в Payment
-
     @Column(nullable = false, length = 20)
-    private String status;  // ACTIVE, COMPLETED, CANCELLED
+    private String status;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    // НОВОЕ: Выбранные услуги для этой аренды
     @ManyToMany
     @JoinTable(
             name = "rental_selected_services",
@@ -78,17 +75,14 @@ public class Rental {
         }
     }
 
-    // НОВОЕ: Метод для расчета стоимости аренды
     public Double calculateTotalPrice() {
         if (endTime == null) return null;
 
         long hours = Duration.between(startTime, endTime).toHours();
-        if (hours < 1) hours = 1; // Минимум 1 час
+        if (hours < 1) hours = 1;
 
-        // Стоимость машины
         double carPrice = car.getPricePerHour() * hours;
 
-        // Стоимость услуг (услуги тарифицируются посуточно)
         long finalHours = hours;
         double servicesPrice = selectedServices.stream()
                 .mapToDouble(service -> {
@@ -100,7 +94,6 @@ public class Rental {
         return carPrice + servicesPrice;
     }
 
-    // НОВОЕ: Метод для получения детализации стоимости
     public PriceDetails getPriceDetails() {
         if (endTime == null) return null;
 
@@ -116,7 +109,6 @@ public class Rental {
         return new PriceDetails(carPrice, servicesPrice, carPrice + servicesPrice, hours, days);
     }
 
-    // Внутренний класс для детализации цены
     @Data
     @AllArgsConstructor
     public static class PriceDetails {

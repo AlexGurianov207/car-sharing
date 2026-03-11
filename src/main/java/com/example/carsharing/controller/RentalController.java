@@ -51,4 +51,34 @@ public class RentalController {
     public RentalResponse cancelRental(@PathVariable Long id) {
         return rentalService.cancelRental(id);
     }
+
+    @GetMapping("/demo/n-plus-one")
+    public List<RentalResponse> demonstrateNPlus1() {
+        return rentalService.demonstrateNPlus1Problem();
+    }
+
+    @GetMapping("/demo/solution")
+    public List<RentalResponse> demonstrateSolution() {
+        return rentalService.demonstrateSolutionWithEntityGraph();
+    }
+
+    @PostMapping("/demo/without-tx")
+    public String demoWithoutTransaction(@RequestBody List<RentalCreateRequest> requests) {
+        try {
+            rentalService.createTwoRentalsWithoutTransaction(requests.get(0), requests.get(1));
+            return "Обе аренды созданы";
+        } catch (Exception e) {
+            return "Ошибка: " + e.getMessage() + " (первая аренда осталась в БД!)";
+        }
+    }
+
+    @PostMapping("/demo/with-tx")
+    public String demoWithTransaction(@RequestBody List<RentalCreateRequest> requests) {
+        try {
+            rentalService.createTwoRentalsWithTransaction(requests.get(0), requests.get(1));
+            return "Обе аренды созданы";
+        } catch (Exception e) {
+            return "Ошибка: " + e.getMessage() + " (всё откатилось, аренд нет)";
+        }
+    }
 }

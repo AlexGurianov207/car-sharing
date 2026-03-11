@@ -9,15 +9,14 @@ public class PaymentResponse {
     private Long rentalId;
     private Long userId;
     private String userFullName;
-    private Double amount;  // Общая сумма
-    private Double carAmount;  // Сумма за машину
-    private Double servicesAmount;  // Сумма за услуги
+    private Double amount;
+    private Double carAmount;
+    private Double servicesAmount;
     private LocalDateTime paymentDate;
     private String paymentMethod;
     private String status;
     private String transactionId;
 
-    // НОВОЕ: Детали аренды для удобства
     private String carInfo;
     private LocalDateTime rentalStartTime;
     private LocalDateTime rentalEndTime;

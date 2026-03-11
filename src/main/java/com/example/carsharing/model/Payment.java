@@ -22,22 +22,22 @@ public class Payment {
     private User user;
 
     @Column(nullable = false)
-    private Double amount;  // Общая сумма
+    private Double amount;
 
     @Column(name = "car_amount", nullable = false)
-    private Double carAmount;  // Сумма за машину
+    private Double carAmount;
 
     @Column(name = "services_amount", nullable = false)
-    private Double servicesAmount;  // Сумма за услуги
+    private Double servicesAmount;
 
     @Column(name = "payment_date", nullable = false)
     private LocalDateTime paymentDate;
 
     @Column(name = "payment_method", nullable = false, length = 20)
-    private String paymentMethod;  // CARD, CASH, APPLE_PAY, GOOGLE_PAY
+    private String paymentMethod;
 
     @Column(nullable = false, length = 20)
-    private String status;  // PENDING, COMPLETED, FAILED, REFUNDED
+    private String status;
 
     @Column(name = "transaction_id", unique = true, length = 100)
     private String transactionId;

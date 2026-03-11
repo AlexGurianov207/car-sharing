@@ -1,15 +1,6 @@
 package com.example.carsharing.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
 import java.util.ArrayList;
@@ -42,12 +33,10 @@ public class Car {
     @Column(name = "price_per_hour", nullable = false)
     private Double pricePerHour;
 
-    // Убрали cascade = CascadeType.ALL, orphanRemoval = true
     @OneToMany(mappedBy = "car")
     @ToString.Exclude
     private List<Rental> rentals = new ArrayList<>();
 
-    // НОВОЕ: Доступные дополнительные услуги для этой машины
     @ManyToMany
     @JoinTable(
             name = "car_available_services",
@@ -56,4 +45,11 @@ public class Car {
     )
     @ToString.Exclude
     private List<ExtraService> availableServices = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        if (status == null) {
+            status = "AVAILABLE";
+        }
+    }
 }

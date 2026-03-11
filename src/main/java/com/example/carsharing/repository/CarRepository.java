@@ -9,8 +9,6 @@ import java.util.Optional;
 @Repository
 public interface CarRepository extends JpaRepository<Car, Long> {
 
-    // Spring Data JPA сам реализует эти методы на основе их названий!
-
     Optional<Car> findByLicensePlate(String licensePlate);
 
     List<Car> findByStatus(String status);
