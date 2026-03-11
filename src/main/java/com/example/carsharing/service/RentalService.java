@@ -154,28 +154,20 @@ public class RentalService {
 
     public List<RentalResponse> demonstrateNPlus1Problem() {
         System.out.println("========== ДЕМОНСТРАЦИЯ N+1 ПРОБЛЕМЫ ==========");
-        System.out.println("Сейчас будет 1 запрос на получение аренд и еще N запросов на каждую связь");
-
         List<Rental> rentals = rentalRepository.findAll();
-
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
                 .collect(Collectors.toList());
-
         System.out.println("========== КОНЕЦ ДЕМОНСТРАЦИИ ==========");
         return responses;
     }
 
     public List<RentalResponse> demonstrateSolutionWithEntityGraph() {
         System.out.println("========== РЕШЕНИЕ N+1 ПРОБЛЕМЫ ==========");
-        System.out.println("Сейчас будет 1 запрос с JOIN, который подгрузит все связи");
-
         List<Rental> rentals = rentalRepository.findAll();
-
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
                 .collect(Collectors.toList());
-
         System.out.println("========== КОНЕЦ РЕШЕНИЯ ==========");
         return responses;
     }

@@ -3,7 +3,9 @@ package com.example.carsharing.service;
 import com.example.carsharing.dto.CarCreateRequest;
 import com.example.carsharing.dto.CarResponse;
 import com.example.carsharing.model.Car;
+import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.repository.CarRepository;
+import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.service.mapper.CarMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ public class CarService {
 
     private final CarRepository carRepository;
     private final CarMapper carMapper;
+    private final ExtraServiceRepository extraServiceRepository;
 
     public CarResponse createCar(CarCreateRequest request) {
         if (carRepository.existsByLicensePlate(request.getLicensePlate())) {
@@ -102,5 +105,22 @@ public class CarService {
             throw new RuntimeException("Car not found with id: " + id);
         }
         carRepository.deleteById(id);
+    }
+
+    public CarResponse updateAvailableServices(Long carId, List<Long> serviceIds) {
+        Car car = carRepository.findById(carId)
+                .orElseThrow(() -> new RuntimeException("Car not found with id: " + carId));
+
+        List<ExtraService> services = extraServiceRepository.findAllById(serviceIds);
+
+        // Проверяем, что все услуги существуют
+        if (services.size() != serviceIds.size()) {
+            throw new RuntimeException("Some services not found");
+        }
+
+        car.setAvailableServices(services);
+        Car updatedCar = carRepository.save(car);
+
+        return carMapper.toResponse(updatedCar);
     }
 }
