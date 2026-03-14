@@ -2,7 +2,13 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
-import com.example.carsharing.model.*;
+import com.example.carsharing.model.Car;
+import com.example.carsharing.model.CarStatus;
+import com.example.carsharing.model.ExtraService;
+import com.example.carsharing.model.Rental;
+import com.example.carsharing.model.RentalStatus;
+import com.example.carsharing.model.User;
+import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.repository.RentalRepository;
