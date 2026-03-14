@@ -22,7 +22,7 @@ public class RentalService {
     private final RentalRepository rentalRepository;
     private final UserRepository userRepository;
     private final CarRepository carRepository;
-    private final ExtraServiceRepository extraServiceRepository;  // НОВОЕ
+    private final ExtraServiceRepository extraServiceRepository;
     private final RentalMapper rentalMapper;
 
     @Transactional
@@ -174,11 +174,16 @@ public class RentalService {
     public RentalResponse createRentalWithoutTransaction(RentalCreateRequest request) {
         Rental rental = createRentalEntity(request);
 
+        Rental savedRental = rentalRepository.save(rental);
+
+        if (true) {
+            throw new RuntimeException("ИСКУССТВЕННАЯ ОШИБКА ПОСЛЕ СОХРАНЕНИЯ АРЕНДЫ!");
+        }
+
         Car car = rental.getCar();
         car.setStatus(CarStatus.RENTED);
         carRepository.save(car);
 
-        Rental savedRental = rentalRepository.save(rental);
         return rentalMapper.toResponse(savedRental);
     }
 
@@ -186,11 +191,16 @@ public class RentalService {
     public RentalResponse createRentalWithTransaction(RentalCreateRequest request) {
         Rental rental = createRentalEntity(request);
 
+        Rental savedRental = rentalRepository.save(rental);
+
+        if (true) {
+            throw new RuntimeException("ИСКУССТВЕННАЯ ОШИБКА ПОСЛЕ СОХРАНЕНИЯ АРЕНДЫ!");
+        }
+
         Car car = rental.getCar();
         car.setStatus(CarStatus.RENTED);
         carRepository.save(car);
 
-        Rental savedRental = rentalRepository.save(rental);
         return rentalMapper.toResponse(savedRental);
     }
 
@@ -199,10 +209,25 @@ public class RentalService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Car car = carRepository.findById(request.getCarId())
                 .orElseThrow(() -> new RuntimeException("Car not found"));
+        if (car.getStatus() != CarStatus.AVAILABLE) {
+            throw new RuntimeException("Car is not available. Status: " + car.getStatus());
+        }
 
         Rental rental = new Rental();
         rental.setUser(user);
         rental.setCar(car);
+
+        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
+            List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
+
+            for (ExtraService service : services) {
+                if (!car.getAvailableServices().contains(service)) {
+                    throw new RuntimeException("Service " + service.getName() + " is not available for this car");
+                }
+            }
+            rental.setSelectedServices(services);
+        }
+
         return rental;
     }
 }
