@@ -163,7 +163,6 @@ public class RentalService {
 
     public List<RentalResponse> demonstrateSolutionWithEntityGraph() {
         System.out.println("========== РЕШЕНИЕ N+1 ПРОБЛЕМЫ ==========");
-        // ВЫЗЫВАЕМ БЫСТРЫЙ МЕТОД
         List<Rental> rentals = rentalRepository.findAll();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
@@ -172,35 +171,27 @@ public class RentalService {
         return responses;
     }
 
-    public void createTwoRentalsWithoutTransaction(RentalCreateRequest request1, RentalCreateRequest request2) {
-        System.out.println("========== БЕЗ @TRANSACTIONAL ==========");
+    public RentalResponse createRentalWithoutTransaction(RentalCreateRequest request) {
+        Rental rental = createRentalEntity(request);
 
-        Rental rental1 = createRentalEntity(request1);
-        rentalRepository.save(rental1);
-        System.out.println("Первая аренда сохранена, ID: " + rental1.getId());
+        Car car = rental.getCar();
+        car.setStatus(CarStatus.RENTED);
+        carRepository.save(car);
 
-        Rental rental2 = createRentalEntity(request2);
-        if (request2.getCarId() == null) {
-            throw new RuntimeException("ОШИБКА! Вторая аренда не сохранится, но первая уже в БД!");
-        }
-        rentalRepository.save(rental2);
+        Rental savedRental = rentalRepository.save(rental);
+        return rentalMapper.toResponse(savedRental);
     }
 
     @Transactional
-    public void createTwoRentalsWithTransaction(RentalCreateRequest request1, RentalCreateRequest request2) {
-        System.out.println("========== С @TRANSACTIONAL ==========");
+    public RentalResponse createRentalWithTransaction(RentalCreateRequest request) {
+        Rental rental = createRentalEntity(request);
 
-        Rental rental1 = createRentalEntity(request1);
-        rentalRepository.save(rental1);
-        System.out.println("Первая аренда создана, но еще не закоммичена");
+        Car car = rental.getCar();
+        car.setStatus(CarStatus.RENTED);
+        carRepository.save(car);
 
-        Rental rental2 = createRentalEntity(request2);
-        if (request2.getCarId() == null) {
-            throw new RuntimeException("ОШИБКА! Транзакция откатится, обе аренды НЕ сохранятся!");
-        }
-        rentalRepository.save(rental2);
-
-        System.out.println("Обе аренды успешно сохранены");
+        Rental savedRental = rentalRepository.save(rental);
+        return rentalMapper.toResponse(savedRental);
     }
 
     private Rental createRentalEntity(RentalCreateRequest request) {

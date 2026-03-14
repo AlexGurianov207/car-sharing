@@ -71,22 +71,12 @@ public class RentalController {
     }
 
     @PostMapping("/demo/without-tx")
-    public String demoWithoutTransaction(@RequestBody List<RentalCreateRequest> requests) {
-        try {
-            rentalService.createTwoRentalsWithoutTransaction(requests.get(0), requests.get(1));
-            return "Обе аренды созданы";
-        } catch (Exception e) {
-            return "Ошибка: " + e.getMessage() + " (первая аренда осталась в БД!)";
-        }
+    public RentalResponse demoWithoutTransaction(@RequestBody RentalCreateRequest request) {
+        return rentalService.createRentalWithoutTransaction(request);
     }
 
     @PostMapping("/demo/with-tx")
-    public String demoWithTransaction(@RequestBody List<RentalCreateRequest> requests) {
-        try {
-            rentalService.createTwoRentalsWithTransaction(requests.get(0), requests.get(1));
-            return "Обе аренды созданы";
-        } catch (Exception e) {
-            return "Ошибка: " + e.getMessage() + " (всё откатилось, аренд нет)";
-        }
+    public RentalResponse demoWithTransaction(@RequestBody RentalCreateRequest request) {
+        return rentalService.createRentalWithTransaction((request));
     }
 }

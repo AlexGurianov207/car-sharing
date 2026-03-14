@@ -15,12 +15,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        if (ex.getMessage() != null && ex.getMessage().contains("not found")) {
+            status = HttpStatus.NOT_FOUND;
+        }
+
         ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
+                status.value(),
                 ex.getMessage(),
                 LocalDateTime.now()
         );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, status);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

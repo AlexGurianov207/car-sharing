@@ -18,7 +18,7 @@ public class PaymentCreateRequest {
     @Positive(message = "Amount must be positive")
     private Double amount;
 
-    @NotBlank(message = "Payment method is required")
+    @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
 
     private String transactionId;

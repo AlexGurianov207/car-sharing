@@ -21,7 +21,7 @@ public class ExtraServiceCreateRequest {
     @Positive(message = "Price must be positive")
     private Double pricePerDay;
 
-    @NotBlank(message = "Category is required")
+    @NotNull(message = "Category is required")
     private ServiceCategory category;
 
     private Boolean isActive;

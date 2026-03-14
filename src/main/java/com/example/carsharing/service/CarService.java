@@ -84,7 +84,6 @@ public class CarService {
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
 
-        // Проверяем, не занят ли новый госномер другой машиной
         if (!car.getLicensePlate().equals(request.getLicensePlate()) &&
                 carRepository.existsByLicensePlate(request.getLicensePlate())) {
             throw new RuntimeException("License plate " + request.getLicensePlate() + " is already taken");
@@ -95,7 +94,6 @@ public class CarService {
         car.setLicensePlate(request.getLicensePlate());
         car.setYear(request.getYear());
         car.setPricePerHour(request.getPricePerHour());
-        // Статус не меняем через этот метод
 
         Car updatedCar = carRepository.save(car);
         return carMapper.toResponse(updatedCar);
@@ -114,7 +112,6 @@ public class CarService {
 
         List<ExtraService> services = extraServiceRepository.findAllById(serviceIds);
 
-        // Проверяем, что все услуги существуют
         if (services.size() != serviceIds.size()) {
             throw new RuntimeException("Some services not found");
         }

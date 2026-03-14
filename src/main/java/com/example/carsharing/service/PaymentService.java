@@ -2,10 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.PaymentCreateRequest;
 import com.example.carsharing.dto.PaymentResponse;
-import com.example.carsharing.model.Payment;
-import com.example.carsharing.model.PaymentStatus;
-import com.example.carsharing.model.Rental;
-import com.example.carsharing.model.User;
+import com.example.carsharing.model.*;
 import com.example.carsharing.repository.PaymentRepository;
 import com.example.carsharing.repository.RentalRepository;
 import com.example.carsharing.repository.UserRepository;
@@ -31,7 +28,7 @@ public class PaymentService {
         Rental rental = rentalRepository.findById(request.getRentalId())
                 .orElseThrow(() -> new RuntimeException("Rental not found with id: " + request.getRentalId()));
 
-        if (!"COMPLETED".equals(rental.getStatus())) {
+        if (rental.getStatus() != RentalStatus.COMPLETED) {
             throw new RuntimeException("Cannot create payment for incomplete rental. Status: " + rental.getStatus());
         }
 
