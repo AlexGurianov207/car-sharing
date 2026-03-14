@@ -3,6 +3,7 @@ package com.example.carsharing.service;
 import com.example.carsharing.dto.PaymentCreateRequest;
 import com.example.carsharing.dto.PaymentResponse;
 import com.example.carsharing.model.Payment;
+import com.example.carsharing.model.PaymentStatus;
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.User;
 import com.example.carsharing.repository.PaymentRepository;
@@ -103,11 +104,11 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Payment not found with id: " + id));
 
-        if (!"COMPLETED".equals(payment.getStatus())) {
+        if (payment.getStatus() != PaymentStatus.COMPLETED) {
             throw new RuntimeException("Cannot refund payment with status: " + payment.getStatus());
         }
 
-        payment.setStatus("REFUNDED");
+        payment.setStatus(PaymentStatus.REFUNDED);
         Payment updatedPayment = paymentRepository.save(payment);
 
         return paymentMapper.toResponse(updatedPayment);

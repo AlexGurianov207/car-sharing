@@ -24,7 +24,7 @@ public class ExtraServiceMapper {
         response.setName(service.getName());
         response.setDescription(service.getDescription());
         response.setPricePerDay(service.getPricePerDay());
-        response.setCategory(service.getCategory());
+        response.setCategory(service.getCategory().name());
         response.setIsActive(service.getIsActive());
         response.setCreatedAt(service.getCreatedAt());
         return response;

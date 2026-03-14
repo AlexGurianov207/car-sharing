@@ -2,6 +2,7 @@ package com.example.carsharing.controller;
 
 import com.example.carsharing.dto.CarCreateRequest;
 import com.example.carsharing.dto.CarResponse;
+import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.service.CarService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class CarController {
 
     @GetMapping
     public List<CarResponse> getAllCars(
-            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "status", required = false) CarStatus status,
             @RequestParam(value = "maxPrice", required = false) Double maxPrice,
             @RequestParam(value = "brand", required = false) String brand,
             @RequestParam(value = "model", required = false) String model) {
@@ -62,7 +63,7 @@ public class CarController {
     @PatchMapping("/{id}/status")
     public CarResponse updateCarStatus(
             @PathVariable Long id,
-            @RequestParam String status) {
+            @RequestParam CarStatus status) {
         return carService.updateStatus(id, status);
     }
 

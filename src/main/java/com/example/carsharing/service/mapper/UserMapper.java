@@ -27,7 +27,7 @@ public class UserMapper {
         response.setPhoneNumber(user.getPhoneNumber());
         response.setDriverLicense(user.getDriverLicense());
         response.setRegistrationDate(user.getRegistrationDate());
-        response.setStatus(user.getStatus());
+        response.setStatus(user.getStatus().name());
         return response;
     }
 }

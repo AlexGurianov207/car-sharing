@@ -3,6 +3,7 @@ package com.example.carsharing.service.mapper;
 import com.example.carsharing.dto.PaymentCreateRequest;
 import com.example.carsharing.dto.PaymentResponse;
 import com.example.carsharing.model.Payment;
+import com.example.carsharing.model.PaymentMethod;
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.User;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,7 @@ public class PaymentMapper {
         Payment payment = new Payment();
         payment.setRental(rental);
         payment.setUser(user);
-        payment.setPaymentMethod(request.getPaymentMethod());
+        payment.setPaymentMethod(PaymentMethod.valueOf(String.valueOf(request.getPaymentMethod())));
         payment.setTransactionId(request.getTransactionId());
         return payment;
     }
@@ -29,8 +30,8 @@ public class PaymentMapper {
         response.setCarAmount(payment.getCarAmount());
         response.setServicesAmount(payment.getServicesAmount());
         response.setPaymentDate(payment.getPaymentDate());
-        response.setPaymentMethod(payment.getPaymentMethod());
-        response.setStatus(payment.getStatus());
+        response.setPaymentMethod(payment.getPaymentMethod().name());
+        response.setStatus(payment.getStatus().name());
         response.setTransactionId(payment.getTransactionId());
 
         if (payment.getRental() != null) {

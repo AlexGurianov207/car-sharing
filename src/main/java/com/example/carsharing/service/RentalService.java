@@ -2,10 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
-import com.example.carsharing.model.Car;
-import com.example.carsharing.model.ExtraService;
-import com.example.carsharing.model.Rental;
-import com.example.carsharing.model.User;
+import com.example.carsharing.model.*;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.repository.RentalRepository;
@@ -33,14 +30,14 @@ public class RentalService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
-        if (!"ACTIVE".equals(user.getStatus())) {
+        if (user.getStatus() != UserStatus.ACTIVE) {
             throw new RuntimeException("User is not active. Status: " + user.getStatus());
         }
 
         Car car = carRepository.findById(request.getCarId())
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + request.getCarId()));
 
-        if (!"AVAILABLE".equals(car.getStatus())) {
+        if (car.getStatus() != CarStatus.AVAILABLE) {
             throw new RuntimeException("Car is not available. Status: " + car.getStatus());
         }
 
@@ -62,7 +59,7 @@ public class RentalService {
 
         Rental savedRental = rentalRepository.save(rental);
 
-        car.setStatus("RENTED");
+        car.setStatus(CarStatus.RENTED);
         carRepository.save(car);
 
         return rentalMapper.toResponse(savedRental);
@@ -73,15 +70,15 @@ public class RentalService {
         Rental rental = rentalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Rental not found with id: " + id));
 
-        if (!"ACTIVE".equals(rental.getStatus())) {
+        if (rental.getStatus() != RentalStatus.ACTIVE) {
             throw new RuntimeException("Rental is not active. Status: " + rental.getStatus());
         }
 
         rental.setEndTime(LocalDateTime.now());
-        rental.setStatus("COMPLETED");
+        rental.setStatus(RentalStatus.COMPLETED);
 
         Car car = rental.getCar();
-        car.setStatus("AVAILABLE");
+        car.setStatus(CarStatus.AVAILABLE);
         carRepository.save(car);
 
         Rental updatedRental = rentalRepository.save(rental);
@@ -106,15 +103,15 @@ public class RentalService {
         Rental rental = rentalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Rental not found with id: " + id));
 
-        if (!"ACTIVE".equals(rental.getStatus())) {
+        if (rental.getStatus() != RentalStatus.ACTIVE) {
             throw new RuntimeException("Rental is not active. Status: " + rental.getStatus());
         }
 
-        rental.setStatus("CANCELLED");
+        rental.setStatus(RentalStatus.CANCELLED);
         rental.setEndTime(LocalDateTime.now());
 
         Car car = rental.getCar();
-        car.setStatus("AVAILABLE");
+        car.setStatus(CarStatus.AVAILABLE);
         carRepository.save(car);
 
         Rental updatedRental = rentalRepository.save(rental);

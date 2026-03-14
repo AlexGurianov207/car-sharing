@@ -1,16 +1,6 @@
 package com.example.carsharing.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
 import java.util.ArrayList;
@@ -34,8 +24,9 @@ public class Car {
     @Column(name = "license_plate", nullable = false, unique = true, length = 10)
     private String licensePlate;
 
-    @Column(nullable = false, length = 20)
-    private String status;  // AVAILABLE, RENTED, SERVICE
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private CarStatus status;
 
     @Column(nullable = false)
     private Integer year;
@@ -59,7 +50,7 @@ public class Car {
     @PrePersist
     protected void onCreate() {
         if (status == null) {
-            status = "AVAILABLE";
+            status = CarStatus.AVAILABLE;
         }
     }
 }

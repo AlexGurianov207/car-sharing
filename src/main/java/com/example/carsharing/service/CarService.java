@@ -3,6 +3,7 @@ package com.example.carsharing.service;
 import com.example.carsharing.dto.CarCreateRequest;
 import com.example.carsharing.dto.CarResponse;
 import com.example.carsharing.model.Car;
+import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
@@ -44,9 +45,9 @@ public class CarService {
         return carMapper.toResponse(car);
     }
 
-    public List<CarResponse> findAll(String status) {
+    public List<CarResponse> findAll(CarStatus status) {
         List<Car> cars;
-        if (status != null && !status.isEmpty()) {
+        if (status != null) {
             cars = carRepository.findByStatus(status);
         } else {
             cars = carRepository.findAll();
@@ -69,7 +70,7 @@ public class CarService {
                 .collect(Collectors.toList());
     }
 
-    public CarResponse updateStatus(Long id, String status) {
+    public CarResponse updateStatus(Long id, CarStatus status) {
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
 

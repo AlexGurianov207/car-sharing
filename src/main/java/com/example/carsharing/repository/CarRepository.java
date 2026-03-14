@@ -1,6 +1,7 @@
 package com.example.carsharing.repository;
 
 import com.example.carsharing.model.Car;
+import com.example.carsharing.model.CarStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
@@ -11,7 +12,7 @@ public interface CarRepository extends JpaRepository<Car, Long> {
 
     Optional<Car> findByLicensePlate(String licensePlate);
 
-    List<Car> findByStatus(String status);
+    List<Car> findByStatus(CarStatus status);
 
     List<Car> findByBrandAndModel(String brand, String model);
 

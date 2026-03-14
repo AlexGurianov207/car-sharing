@@ -1,5 +1,6 @@
 package com.example.carsharing.dto;
 
+import com.example.carsharing.model.PaymentMethod;
 import lombok.Data;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -18,7 +19,7 @@ public class PaymentCreateRequest {
     private Double amount;
 
     @NotBlank(message = "Payment method is required")
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
 
     private String transactionId;
 }

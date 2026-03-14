@@ -33,7 +33,7 @@ public class RentalMapper {
                 rental.getCar().getLicensePlate() + ")");
         response.setStartTime(rental.getStartTime());
         response.setEndTime(rental.getEndTime());
-        response.setStatus(rental.getStatus());
+        response.setStatus(rental.getStatus().name());
         response.setCreatedAt(rental.getCreatedAt());
 
         if (rental.getSelectedServices() != null) {
@@ -65,7 +65,7 @@ public class RentalMapper {
         info.setId(service.getId());
         info.setName(service.getName());
         info.setPricePerDay(service.getPricePerDay());
-        info.setCategory(service.getCategory());
+        info.setCategory(service.getCategory().name());
         return info;
     }
 }

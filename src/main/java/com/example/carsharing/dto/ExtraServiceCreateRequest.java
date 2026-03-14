@@ -1,5 +1,6 @@
 package com.example.carsharing.dto;
 
+import com.example.carsharing.model.ServiceCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -21,7 +22,7 @@ public class ExtraServiceCreateRequest {
     private Double pricePerDay;
 
     @NotBlank(message = "Category is required")
-    private String category;
+    private ServiceCategory category;
 
     private Boolean isActive;
 }

@@ -2,6 +2,8 @@ package com.example.carsharing.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -41,8 +43,9 @@ public class User {
     @Column(name = "registration_date", nullable = false)
     private LocalDateTime registrationDate;
 
-    @Column(nullable = false, length = 20)
-    private String status;  // ACTIVE, BLOCKED, DELETED
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
 
     @OneToMany(mappedBy = "user")
     @ToString.Exclude
@@ -52,7 +55,7 @@ public class User {
     protected void onCreate() {
         registrationDate = LocalDateTime.now();
         if (status == null) {
-            status = "ACTIVE";
+            status = UserStatus.ACTIVE;
         }
     }
 }

@@ -27,7 +27,7 @@ public class CarMapper {
         response.setBrand(car.getBrand());
         response.setModel(car.getModel());
         response.setLicensePlate(car.getLicensePlate());
-        response.setStatus(car.getStatus());
+        response.setStatus(car.getStatus().name());
         response.setYear(car.getYear());
         response.setPricePerHour(car.getPricePerHour());
 
@@ -38,7 +38,7 @@ public class CarMapper {
                         info.setId(service.getId());
                         info.setName(service.getName());
                         info.setPricePerDay(service.getPricePerDay());
-                        info.setCategory(service.getCategory());
+                        info.setCategory(service.getCategory().name());
                         return info;
                     })
                     .collect(Collectors.toList());

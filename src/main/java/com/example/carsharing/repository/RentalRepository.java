@@ -1,6 +1,7 @@
 package com.example.carsharing.repository;
 
 import com.example.carsharing.model.Rental;
+import com.example.carsharing.model.RentalStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,11 +17,11 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     List<Rental> findByCarId(Long carId);
 
-    List<Rental> findByStatus(String status);
+    List<Rental> findByStatus(RentalStatus status);
 
     List<Rental> findByEndTimeIsNull();
 
-    List<Rental> findByUserIdAndStatus(Long userId, String status);
+    List<Rental> findByUserIdAndStatus(Long userId, RentalStatus status);
 
     boolean existsByCarIdAndEndTimeIsNull(Long carId);
 

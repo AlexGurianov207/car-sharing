@@ -3,6 +3,7 @@ package com.example.carsharing.service;
 import com.example.carsharing.dto.ExtraServiceCreateRequest;
 import com.example.carsharing.dto.ExtraServiceResponse;
 import com.example.carsharing.model.ExtraService;
+import com.example.carsharing.model.ServiceCategory;
 import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.service.mapper.ExtraServiceMapper;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +36,10 @@ public class ExtraServiceService {
         return extraServiceMapper.toResponse(service);
     }
 
-    public List<ExtraServiceResponse> getAllServices(String category, Boolean onlyActive) {
+    public List<ExtraServiceResponse> getAllServices(ServiceCategory category, Boolean onlyActive) {
         List<ExtraService> services;
 
-        if (category != null && !category.isEmpty()) {
+        if (category != null) {
             services = extraServiceRepository.findByCategory(category);
         } else if (onlyActive != null && onlyActive) {
             services = extraServiceRepository.findByIsActiveTrue();

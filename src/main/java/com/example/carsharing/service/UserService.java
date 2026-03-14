@@ -3,6 +3,7 @@ package com.example.carsharing.service;
 import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
 import com.example.carsharing.model.User;
+import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -66,14 +67,14 @@ public class UserService {
     public void blockUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        user.setStatus("BLOCKED");
+        user.setStatus(UserStatus.BLOCKED);
         userRepository.save(user);
     }
 
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        user.setStatus("DELETED");
+        user.setStatus(UserStatus.DELETED);
         userRepository.save(user);
     }
 }

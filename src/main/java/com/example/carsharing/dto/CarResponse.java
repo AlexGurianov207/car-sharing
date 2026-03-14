@@ -17,7 +17,7 @@ public class CarResponse {
     private List<CarServiceInfo> availableServices;
 
     @Data
-    public static class CarServiceInfo {  // было ServiceInfo
+    public static class CarServiceInfo {
         private Long id;
         private String name;
         private Double pricePerDay;

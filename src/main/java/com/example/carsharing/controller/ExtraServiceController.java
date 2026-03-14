@@ -2,6 +2,7 @@ package com.example.carsharing.controller;
 
 import com.example.carsharing.dto.ExtraServiceCreateRequest;
 import com.example.carsharing.dto.ExtraServiceResponse;
+import com.example.carsharing.model.ServiceCategory;
 import com.example.carsharing.service.ExtraServiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class ExtraServiceController {
 
     @GetMapping
     public List<ExtraServiceResponse> getAllServices(
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false) ServiceCategory category,
             @RequestParam(required = false) Boolean onlyActive) {
         return extraServiceService.getAllServices(category, onlyActive);
     }
