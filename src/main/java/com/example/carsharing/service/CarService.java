@@ -9,6 +9,7 @@ import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.service.mapper.CarMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -23,9 +24,11 @@ public class CarService {
     private final CarMapper carMapper;
     private final ExtraServiceRepository extraServiceRepository;
 
+    private static final String CAR_NOT_FOUND_MESSAGE = "Car not found with";
+
     public CarResponse createCar(CarCreateRequest request) {
         if (carRepository.existsByLicensePlate(request.getLicensePlate())) {
-            throw new RuntimeException("Car with license plate " + request.getLicensePlate() + " already exists");
+            throw new DataIntegrityViolationException("Car with license plate " + request.getLicensePlate() + " already exists");
         }
 
         Car car = carMapper.toEntity(request);
@@ -35,13 +38,13 @@ public class CarService {
 
     public CarResponse findById(Long id) {
         Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + "id:" + id));
         return carMapper.toResponse(car);
     }
 
     public CarResponse findByLicensePlate(String licensePlate) {
         Car car = carRepository.findByLicensePlate(licensePlate)
-                .orElseThrow(() -> new RuntimeException("Car not found with license plate: " + licensePlate));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + " license plate: " + licensePlate));
         return carMapper.toResponse(car);
     }
 
@@ -72,7 +75,7 @@ public class CarService {
 
     public CarResponse updateStatus(Long id, CarStatus status) {
         Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + " id: " + id));
 
         car.setStatus(status);
         Car updatedCar = carRepository.save(car);
@@ -82,7 +85,7 @@ public class CarService {
 
     public CarResponse updateCar(Long id, CarCreateRequest request) {
         Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + " id: " + id));
 
         if (!car.getLicensePlate().equals(request.getLicensePlate()) &&
                 carRepository.existsByLicensePlate(request.getLicensePlate())) {
@@ -101,14 +104,14 @@ public class CarService {
 
     public void deleteCar(Long id) {
         if (!carRepository.existsById(id)) {
-            throw new RuntimeException("Car not found with id: " + id);
+            throw new RuntimeException(CAR_NOT_FOUND_MESSAGE + " id: " + id);
         }
         carRepository.deleteById(id);
     }
 
     public CarResponse updateAvailableServices(Long carId, List<Long> serviceIds) {
         Car car = carRepository.findById(carId)
-                .orElseThrow(() -> new RuntimeException("Car not found with id: " + carId));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + " id: " + carId));
 
         List<ExtraService> services = extraServiceRepository.findAllById(serviceIds);
 
