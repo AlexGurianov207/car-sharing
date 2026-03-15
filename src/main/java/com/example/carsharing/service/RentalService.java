@@ -182,8 +182,15 @@ public class RentalService {
 
         Rental savedRental = rentalRepository.save(rental);
 
-        if (true) {
-            throw new RuntimeException("ИСКУССТВЕННАЯ ОШИБКА ПОСЛЕ СОХРАНЕНИЯ АРЕНДЫ!");
+        if (request.getServiceIds() != null) {
+            for (Long serviceId : request.getServiceIds()) {
+                ExtraService service = extraServiceRepository.findById(serviceId)
+                        .orElseThrow(() -> new RuntimeException("Service not found with id: " + serviceId));
+
+                if (!rental.getCar().getAvailableServices().contains(service)) {
+                    throw new RuntimeException("Service " + service.getName() + " is not available for this car");
+                }
+            }
         }
 
         Car car = rental.getCar();
@@ -199,8 +206,15 @@ public class RentalService {
 
         Rental savedRental = rentalRepository.save(rental);
 
-        if (true) {
-            throw new RuntimeException("ИСКУССТВЕННАЯ ОШИБКА ПОСЛЕ СОХРАНЕНИЯ АРЕНДЫ!");
+        if (request.getServiceIds() != null) {
+            for (Long serviceId : request.getServiceIds()) {
+                ExtraService service = extraServiceRepository.findById(serviceId)
+                        .orElseThrow(() -> new RuntimeException("Service not found with id: " + serviceId));
+
+                if (!rental.getCar().getAvailableServices().contains(service)) {
+                    throw new RuntimeException("Service " + service.getName() + " is not available for this car");
+                }
+            }
         }
 
         Car car = rental.getCar();
