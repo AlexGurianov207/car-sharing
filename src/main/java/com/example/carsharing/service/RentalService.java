@@ -154,22 +154,22 @@ public class RentalService {
     }
 
     public List<RentalResponse> demonstrateNPlus1Problem() {
-        System.out.println("========== ДЕМОНСТРАЦИЯ N+1 ПРОБЛЕМЫ ==========");
+        log.info("========== ДЕМОНСТРАЦИЯ N+1 ПРОБЛЕМЫ ==========");
         List<Rental> rentals = rentalRepository.findAllSlow();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
                 .toList();
-        System.out.println("========== КОНЕЦ ДЕМОНСТРАЦИИ ==========");
+        log.info("========== КОНЕЦ ДЕМОНСТРАЦИИ ==========");
         return responses;
     }
 
     public List<RentalResponse> demonstrateSolutionWithEntityGraph() {
-        System.out.println("========== РЕШЕНИЕ N+1 ПРОБЛЕМЫ ==========");
+        log.info("========== РЕШЕНИЕ N+1 ПРОБЛЕМЫ ==========");
         List<Rental> rentals = rentalRepository.findAll();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
                 .toList();
-        System.out.println("========== КОНЕЦ РЕШЕНИЯ ==========");
+        log.info("========== КОНЕЦ РЕШЕНИЯ ==========");
         return responses;
     }
 
