@@ -16,11 +16,13 @@ import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.RentalMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.NoSuchElementException;
 
 @Slf4j
 @Service
@@ -43,18 +45,18 @@ public class RentalService {
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new RuntimeException("User is not active. Status: " + user.getStatus());
+            throw new InvalidDataAccessApiUsageException("User is not active. Status: " + user.getStatus());
         }
 
         Car car = carRepository.findById(request.getCarId())
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + request.getCarId()));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
-            throw new RuntimeException("Car is not available. Status: " + car.getStatus());
+            throw new InvalidDataAccessApiUsageException("Car is not available. Status: " + car.getStatus());
         }
 
         if (rentalRepository.existsByCarIdAndEndTimeIsNull(car.getId())) {
-            throw new RuntimeException("Car is already rented");
+            throw new DataIntegrityViolationException("Car is already rented");
         }
 
         Rental rental = rentalMapper.toEntity(request, user, car);
@@ -62,11 +64,11 @@ public class RentalService {
         if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
             List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
             if (services.size() != request.getServiceIds().size()) {
-                throw new RuntimeException("Some services not found");
+                throw new NoSuchElementException("Some services not found");
             }
             for (ExtraService service : services) {
                 if (!car.getAvailableServices().contains(service)) {
-                    throw new RuntimeException("Service " + service.getName() + " is not available for this car");
+                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() + " is not available for this car");
                 }
             }
             rental.setSelectedServices(services);
@@ -86,7 +88,7 @@ public class RentalService {
                 .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
 
         if (rental.getStatus() != RentalStatus.ACTIVE) {
-            throw new RuntimeException("Rental is not active. Status: " + rental.getStatus());
+            throw new InvalidDataAccessApiUsageException("Rental is not active. Status: " + rental.getStatus());
         }
 
         rental.setEndTime(LocalDateTime.now());
@@ -100,26 +102,12 @@ public class RentalService {
         return rentalMapper.toResponse(updatedRental);
     }
 
-    public List<RentalResponse> getAllRentalsWithNPlus1Problem() {
-
-        return rentalRepository.findAll().stream()
-                .map(rentalMapper::toResponse)
-                .toList();
-    }
-
-    public List<RentalResponse> getAllRentalsWithDetails() {
-
-        return rentalRepository.findAll().stream()
-                .map(rentalMapper::toResponse)
-                .toList();
-    }
-
     public RentalResponse cancelRental(Long id) {
         Rental rental = rentalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
 
         if (rental.getStatus() != RentalStatus.ACTIVE) {
-            throw new RuntimeException("Rental is not active. Status: " + rental.getStatus());
+            throw new InvalidDataAccessApiUsageException("Rental is not active. Status: " + rental.getStatus());
         }
 
         rental.setStatus(RentalStatus.CANCELLED);
@@ -141,7 +129,7 @@ public class RentalService {
 
     public List<RentalResponse> getUserRentals(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found with id: " + userId);
+            throw new NoSuchElementException("User not found with id: " + userId);
         }
 
         return rentalRepository.findByUserId(userId).stream()
@@ -151,7 +139,7 @@ public class RentalService {
 
     public List<RentalResponse> getCarRentals(Long carId) {
         if (!carRepository.existsById(carId)) {
-            throw new RuntimeException("Car not found with id: " + carId);
+            throw new NoSuchElementException("Car not found with id: " + carId);
         }
 
         return rentalRepository.findByCarId(carId).stream()
@@ -195,7 +183,7 @@ public class RentalService {
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
-            throw new RuntimeException("Car is not available");
+            throw new InvalidDataAccessApiUsageException("Car is not available");
         }
 
         Rental rental = new Rental();
@@ -215,14 +203,14 @@ public class RentalService {
 
             if (services.size() != request.getServiceIds().size()) {
                 log.error("ОШИБКА: Не все сервисы найдены. Аренда {} уже в БД!", savedRental.getId());
-                throw new RuntimeException("Some services not found");
+                throw new NoSuchElementException("Some services not found");
             }
 
             for (ExtraService service : services) {
                 if (!car.getAvailableServices().contains(service)) {
                     log.error("ОШИБКА: Сервис {} недоступен. Аренда {} уже в БД!",
                             service.getName(), savedRental.getId());
-                    throw new RuntimeException("Service " + service.getName() + " is not available for this car");
+                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() + " is not available for this car");
                 }
             }
 
@@ -245,7 +233,7 @@ public class RentalService {
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
-            throw new RuntimeException("Car is not available");
+            throw new InvalidDataAccessApiUsageException("Car is not available");
         }
 
         Rental rental = new Rental();
@@ -264,13 +252,13 @@ public class RentalService {
 
             if (services.size() != request.getServiceIds().size()) {
                 log.error("ОШИБКА: Не все сервисы найдены. Транзакция откатится!");
-                throw new RuntimeException("Some services not found");
+                throw new NoSuchElementException("Some services not found");
             }
 
             for (ExtraService service : services) {
                 if (!car.getAvailableServices().contains(service)) {
                     log.error("ОШИБКА: Сервис {} недоступен. Транзакция откатится!", service.getName());
-                    throw new RuntimeException("Service " + service.getName() + " is not available for this car");
+                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() + " is not available for this car");
                 }
             }
         }
