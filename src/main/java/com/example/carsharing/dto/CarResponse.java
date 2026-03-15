@@ -2,6 +2,8 @@ package com.example.carsharing.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class CarResponse {
     private String licensePlate;
@@ -11,4 +13,14 @@ public class CarResponse {
     private int year;
     private double pricePerHour;
     private String status;
+
+    private List<CarServiceInfo> availableServices;
+
+    @Data
+    public static class CarServiceInfo {
+        private Long id;
+        private String name;
+        private Double pricePerDay;
+        private String category;
+    }
 }
