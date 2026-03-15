@@ -73,21 +73,11 @@ public class RentalController {
 
     @PostMapping("/demo/without-tx")
     public RentalResponse demoWithoutTransaction(@RequestBody RentalCreateRequest request) {
-        try {
-            RentalResponse response = rentalService.createRentalWithoutTransaction(request);
-            return new ResponseEntity<>(response, HttpStatus.CREATED).getBody();
-        } catch (Exception e) {
-            throw e;
-        }
+        return rentalService.createRentalWithoutTransaction(request);
     }
 
     @PostMapping("/demo/with-tx")
     public RentalResponse demoWithTransaction(@RequestBody RentalCreateRequest request) {
-        try {
-            RentalResponse response = rentalService.createRentalWithTransaction(request);
-            return new ResponseEntity<>(response, HttpStatus.CREATED).getBody();
-        } catch (Exception e) {
-            throw e;
-        }
+        return rentalService.createRentalWithTransaction(request);
     }
 }
