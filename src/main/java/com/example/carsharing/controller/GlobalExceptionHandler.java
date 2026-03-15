@@ -1,5 +1,6 @@
 package com.example.carsharing.controller;
 
+import com.example.carsharing.exception.ConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -17,8 +18,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
-        if (ex.getMessage() != null && ex.getMessage().contains("not found")) {
-            status = HttpStatus.NOT_FOUND;
+        if (ex.getMessage() != null) {
+            if (ex.getMessage().contains("not found with id")) {
+                status = HttpStatus.NOT_FOUND;
+            } else if (ex.getMessage().contains("not available") ||
+                    ex.getMessage().contains("already exists") ||
+                    ex.getMessage().contains("already rented")) {
+                status = HttpStatus.CONFLICT;
+            }
         }
 
         ErrorResponse error = new ErrorResponse(
@@ -27,6 +34,16 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(error, status);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflictException(RuntimeException ex) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

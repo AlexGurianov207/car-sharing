@@ -15,12 +15,14 @@ import com.example.carsharing.repository.RentalRepository;
 import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.RentalMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RentalService {
@@ -55,6 +57,9 @@ public class RentalService {
 
         if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
             List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
+            if (services.size() != request.getServiceIds().size()) {
+                throw new RuntimeException("Some services not found");
+            }
             for (ExtraService service : services) {
                 if (!car.getAvailableServices().contains(service)) {
                     throw new RuntimeException("Service " + service.getName() + " is not available for this car");
@@ -178,49 +183,106 @@ public class RentalService {
     }
 
     public RentalResponse createRentalWithoutTransaction(RentalCreateRequest request) {
-        Rental rental = createRentalEntity(request);
+        log.info("=== ДЕМОНСТРАЦИЯ БЕЗ @Transactional ===");
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Car car = carRepository.findById(request.getCarId())
+                .orElseThrow(() -> new RuntimeException("Car not found"));
+
+        if (car.getStatus() != CarStatus.AVAILABLE) {
+            throw new RuntimeException("Car is not available");
+        }
+
+        Rental rental = new Rental();
+        rental.setUser(user);
+        rental.setCar(car);
+        rental.setStartTime(LocalDateTime.now());
 
         Rental savedRental = rentalRepository.save(rental);
+        log.info("Аренда сохранена в БД! ID: {}", savedRental.getId());
 
-        if (request.getServiceIds() != null) {
-            for (Long serviceId : request.getServiceIds()) {
-                ExtraService service = extraServiceRepository.findById(serviceId)
-                        .orElseThrow(() -> new RuntimeException("Service not found with id: " + serviceId));
+        car.setStatus(CarStatus.RENTED);
+        carRepository.save(car);
+        log.info("Статус машины обновлен на RENTED");
 
-                if (!rental.getCar().getAvailableServices().contains(service)) {
+        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
+            List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
+
+            if (services.size() != request.getServiceIds().size()) {
+                log.error("ОШИБКА: Не все сервисы найдены. Аренда {} уже в БД!", savedRental.getId());
+                throw new RuntimeException("Some services not found");
+            }
+
+            for (ExtraService service : services) {
+                if (!car.getAvailableServices().contains(service)) {
+                    log.error("ОШИБКА: Сервис {} недоступен. Аренда {} уже в БД!",
+                            service.getName(), savedRental.getId());
                     throw new RuntimeException("Service " + service.getName() + " is not available for this car");
                 }
             }
+
+            savedRental.setSelectedServices(services);
+            rentalRepository.save(savedRental);
         }
 
-        Car car = rental.getCar();
-        car.setStatus(CarStatus.RENTED);
-        carRepository.save(car);
-
+        log.info("Аренда {} успешно создана (НО ЕСЛИ БЫЛА ОШИБКА - ОНА БЫ ОСТАЛАСЬ!)", savedRental.getId());
         return rentalMapper.toResponse(savedRental);
     }
 
     @Transactional
     public RentalResponse createRentalWithTransaction(RentalCreateRequest request) {
-        Rental rental = createRentalEntity(request);
+        log.info("=== ДЕМОНСТРАЦИЯ С @Transactional ===");
 
-        Rental savedRental = rentalRepository.save(rental);
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (request.getServiceIds() != null) {
-            for (Long serviceId : request.getServiceIds()) {
-                ExtraService service = extraServiceRepository.findById(serviceId)
-                        .orElseThrow(() -> new RuntimeException("Service not found with id: " + serviceId));
+        Car car = carRepository.findById(request.getCarId())
+                .orElseThrow(() -> new RuntimeException("Car not found"));
 
-                if (!rental.getCar().getAvailableServices().contains(service)) {
+        if (car.getStatus() != CarStatus.AVAILABLE) {
+            throw new RuntimeException("Car is not available");
+        }
+
+        List<ExtraService> services = null;
+        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
+            services = extraServiceRepository.findAllById(request.getServiceIds());
+
+            if (services.size() != request.getServiceIds().size()) {
+                log.error("ОШИБКА: Не все сервисы найдены. Транзакция откатится!");
+                throw new RuntimeException("Some services not found");
+            }
+
+            for (ExtraService service : services) {
+                if (!car.getAvailableServices().contains(service)) {
+                    log.error("ОШИБКА: Сервис {} недоступен. Транзакция откатится!", service.getName());
                     throw new RuntimeException("Service " + service.getName() + " is not available for this car");
                 }
             }
         }
 
-        Car car = rental.getCar();
+        Rental rental = new Rental();
+        rental.setUser(user);
+        rental.setCar(car);
+        rental.setStartTime(LocalDateTime.now());
+
+        if (services != null) {
+            rental.setSelectedServices(services);
+        }
+
+        Rental savedRental = rentalRepository.save(rental);
+        log.info("Аренда создана в памяти, но еще не закоммичена в БД");
+
         car.setStatus(CarStatus.RENTED);
         carRepository.save(car);
 
+        if (request.getServiceIds() != null && request.getServiceIds().contains(999L)) {
+            log.error("ИМИТАЦИЯ ОШИБКИ ПОСЛЕ СОХРАНЕНИЯ! @Transactional ВСЁ ОТКАТИТ!");
+            throw new RuntimeException("Ошибка после сохранения - всё откатится!");
+        }
+
+        log.info("Транзакция успешно завершена. Аренда {} сохранена в БД", savedRental.getId());
         return rentalMapper.toResponse(savedRental);
     }
 
