@@ -7,10 +7,10 @@ import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,13 +20,15 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
+    private static final String USER_NOT_FOUND_MESSAGE = "User not found with id: ";
+
     public UserResponse createUser(UserCreateRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("User with email " + request.getEmail() + " already exists");
+            throw new DataIntegrityViolationException("User with email " + request.getEmail() + " already exists");
         }
 
         if (userRepository.existsByDriverLicense(request.getDriverLicense())) {
-            throw new RuntimeException("User with driver license " + request.getDriverLicense() + " already exists");
+            throw new DataIntegrityViolationException("User with driver license " + request.getDriverLicense() + " already exists");
         }
 
         User user = userMapper.toEntity(request);
@@ -36,7 +38,7 @@ public class UserService {
 
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
         return userMapper.toResponse(user);
     }
 
@@ -49,12 +51,12 @@ public class UserService {
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(userMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public UserResponse updateUser(Long id, UserCreateRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
 
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -66,14 +68,14 @@ public class UserService {
 
     public void blockUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
         user.setStatus(UserStatus.BLOCKED);
         userRepository.save(user);
     }
 
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
         user.setStatus(UserStatus.DELETED);
         userRepository.save(user);
     }
