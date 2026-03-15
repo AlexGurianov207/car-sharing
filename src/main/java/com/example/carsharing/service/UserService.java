@@ -28,7 +28,8 @@ public class UserService {
         }
 
         if (userRepository.existsByDriverLicense(request.getDriverLicense())) {
-            throw new DataIntegrityViolationException("User with driver license " + request.getDriverLicense() + " already exists");
+            throw new DataIntegrityViolationException("User with driver license "
+                    + request.getDriverLicense() + " already exists");
         }
 
         User user = userMapper.toEntity(request);

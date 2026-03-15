@@ -68,7 +68,8 @@ public class RentalService {
             }
             for (ExtraService service : services) {
                 if (!car.getAvailableServices().contains(service)) {
-                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() + " is not available for this car");
+                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() +
+                            " is not available for this car");
                 }
             }
             rental.setSelectedServices(services);
@@ -210,7 +211,8 @@ public class RentalService {
                 if (!car.getAvailableServices().contains(service)) {
                     log.error("ОШИБКА: Сервис {} недоступен. Аренда {} уже в БД!",
                             service.getName(), savedRental.getId());
-                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() + " is not available for this car");
+                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() +
+                            " is not available for this car");
                 }
             }
 
@@ -258,7 +260,8 @@ public class RentalService {
             for (ExtraService service : services) {
                 if (!car.getAvailableServices().contains(service)) {
                     log.error("ОШИБКА: Сервис {} недоступен. Транзакция откатится!", service.getName());
-                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() + " is not available for this car");
+                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() +
+                            " is not available for this car");
                 }
             }
         }

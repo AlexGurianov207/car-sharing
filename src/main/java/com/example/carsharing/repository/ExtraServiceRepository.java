@@ -13,7 +13,5 @@ public interface ExtraServiceRepository extends JpaRepository<ExtraService, Long
 
     List<ExtraService> findByIsActiveTrue();
 
-    List<ExtraService> findByPricePerDayLessThanEqual(Double maxPrice);
-
     boolean existsByName(String name);
 }

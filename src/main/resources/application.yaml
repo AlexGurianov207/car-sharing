@@ -1,17 +1,13 @@
-# Настройки приложения
 server:
   port: 8080
 
-# Настройки Spring
 spring:
-  # Подключение к базе данных
   datasource:
     url: jdbc:postgresql://localhost:5432/car_sharing
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
-  # Настройки JPA/Hibernate
   jpa:
     hibernate:
       ddl-auto: update
@@ -21,7 +17,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
-# Логирование SQL запросов
 logging:
   level:
     org:

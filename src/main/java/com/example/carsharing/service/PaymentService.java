@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +35,8 @@ public class PaymentService {
                 .orElseThrow(() -> new NoSuchElementException("Rental not found with id: " + request.getRentalId()));
 
         if (rental.getStatus() != RentalStatus.COMPLETED) {
-            throw new InvalidDataAccessApiUsageException("Cannot create payment for incomplete rental. Status: " + rental.getStatus());
+            throw new InvalidDataAccessApiUsageException("Cannot create payment for incomplete rental. Status: "
+                    + rental.getStatus());
         }
 
         if (paymentRepository.existsByRentalId(request.getRentalId())) {

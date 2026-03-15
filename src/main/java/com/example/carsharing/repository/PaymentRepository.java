@@ -13,9 +13,5 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     Optional<Payment> findByRentalId(Long rentalId);
 
-    List<Payment> findByStatus(String status);
-
-    List<Payment> findByPaymentMethod(String paymentMethod);
-
     boolean existsByRentalId(Long rentalId);
 }
