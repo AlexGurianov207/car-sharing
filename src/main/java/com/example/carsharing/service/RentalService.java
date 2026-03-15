@@ -33,6 +33,10 @@ public class RentalService {
     private final ExtraServiceRepository extraServiceRepository;
     private final RentalMapper rentalMapper;
 
+    private static final String CAR_NOT_FOUND_MESSAGE = "Car not found";
+    private static final String USER_NOT_FOUND_MESSAGE = "User not found";
+    private static final String RENTAL_NOT_FOUND_MESSAGE = "Rental not found with id: ";
+
     @Transactional
     public RentalResponse createRental(RentalCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
@@ -79,7 +83,7 @@ public class RentalService {
     @Transactional
     public RentalResponse completeRental(Long id) {
         Rental rental = rentalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Rental not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
 
         if (rental.getStatus() != RentalStatus.ACTIVE) {
             throw new RuntimeException("Rental is not active. Status: " + rental.getStatus());
@@ -100,19 +104,19 @@ public class RentalService {
 
         return rentalRepository.findAll().stream()
                 .map(rentalMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<RentalResponse> getAllRentalsWithDetails() {
 
         return rentalRepository.findAll().stream()
                 .map(rentalMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public RentalResponse cancelRental(Long id) {
         Rental rental = rentalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Rental not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
 
         if (rental.getStatus() != RentalStatus.ACTIVE) {
             throw new RuntimeException("Rental is not active. Status: " + rental.getStatus());
@@ -131,7 +135,7 @@ public class RentalService {
 
     public RentalResponse getRentalById(Long id) {
         Rental rental = rentalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Rental not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
         return rentalMapper.toResponse(rental);
     }
 
@@ -142,7 +146,7 @@ public class RentalService {
 
         return rentalRepository.findByUserId(userId).stream()
                 .map(rentalMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<RentalResponse> getCarRentals(Long carId) {
@@ -152,22 +156,21 @@ public class RentalService {
 
         return rentalRepository.findByCarId(carId).stream()
                 .map(rentalMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<RentalResponse> getActiveRentals() {
         return rentalRepository.findByEndTimeIsNull().stream()
                 .map(rentalMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<RentalResponse> demonstrateNPlus1Problem() {
         System.out.println("========== ДЕМОНСТРАЦИЯ N+1 ПРОБЛЕМЫ ==========");
-        // ВЫЗЫВАЕМ МЕДЛЕННЫЙ МЕТОД
         List<Rental> rentals = rentalRepository.findAllSlow();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
         System.out.println("========== КОНЕЦ ДЕМОНСТРАЦИИ ==========");
         return responses;
     }
@@ -177,7 +180,7 @@ public class RentalService {
         List<Rental> rentals = rentalRepository.findAll();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
         System.out.println("========== КОНЕЦ РЕШЕНИЯ ==========");
         return responses;
     }
@@ -186,10 +189,10 @@ public class RentalService {
         log.info("=== ДЕМОНСТРАЦИЯ БЕЗ @Transactional ===");
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE));
 
         Car car = carRepository.findById(request.getCarId())
-                .orElseThrow(() -> new RuntimeException("Car not found"));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
             throw new RuntimeException("Car is not available");
@@ -236,10 +239,10 @@ public class RentalService {
         log.info("=== ДЕМОНСТРАЦИЯ С @Transactional ===");
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE));
 
         Car car = carRepository.findById(request.getCarId())
-                .orElseThrow(() -> new RuntimeException("Car not found"));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
             throw new RuntimeException("Car is not available");
@@ -274,32 +277,5 @@ public class RentalService {
 
         log.info("Транзакция успешно завершена. Аренда {} сохранена в БД", savedRental.getId());
         return rentalMapper.toResponse(savedRental);
-    }
-
-    private Rental createRentalEntity(RentalCreateRequest request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        Car car = carRepository.findById(request.getCarId())
-                .orElseThrow(() -> new RuntimeException("Car not found"));
-        if (car.getStatus() != CarStatus.AVAILABLE) {
-            throw new RuntimeException("Car is not available. Status: " + car.getStatus());
-        }
-
-        Rental rental = new Rental();
-        rental.setUser(user);
-        rental.setCar(car);
-
-        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
-            List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
-
-            for (ExtraService service : services) {
-                if (!car.getAvailableServices().contains(service)) {
-                    throw new RuntimeException("Service " + service.getName() + " is not available for this car");
-                }
-            }
-            rental.setSelectedServices(services);
-        }
-
-        return rental;
     }
 }
