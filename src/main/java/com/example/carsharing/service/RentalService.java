@@ -245,9 +245,19 @@ public class RentalService {
             throw new RuntimeException("Car is not available");
         }
 
-        List<ExtraService> services = null;
+        Rental rental = new Rental();
+        rental.setUser(user);
+        rental.setCar(car);
+        rental.setStartTime(LocalDateTime.now());
+
+        Rental savedRental = rentalRepository.save(rental);
+        log.info("Аренда создана в памяти, но еще не закоммичена в БД");
+
+        car.setStatus(CarStatus.RENTED);
+        carRepository.save(car);
+        
         if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
-            services = extraServiceRepository.findAllById(request.getServiceIds());
+            List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
 
             if (services.size() != request.getServiceIds().size()) {
                 log.error("ОШИБКА: Не все сервисы найдены. Транзакция откатится!");
@@ -260,26 +270,6 @@ public class RentalService {
                     throw new RuntimeException("Service " + service.getName() + " is not available for this car");
                 }
             }
-        }
-
-        Rental rental = new Rental();
-        rental.setUser(user);
-        rental.setCar(car);
-        rental.setStartTime(LocalDateTime.now());
-
-        if (services != null) {
-            rental.setSelectedServices(services);
-        }
-
-        Rental savedRental = rentalRepository.save(rental);
-        log.info("Аренда создана в памяти, но еще не закоммичена в БД");
-
-        car.setStatus(CarStatus.RENTED);
-        carRepository.save(car);
-
-        if (request.getServiceIds() != null && request.getServiceIds().contains(999L)) {
-            log.error("ИМИТАЦИЯ ОШИБКИ ПОСЛЕ СОХРАНЕНИЯ! @Transactional ВСЁ ОТКАТИТ!");
-            throw new RuntimeException("Ошибка после сохранения - всё откатится!");
         }
 
         log.info("Транзакция успешно завершена. Аренда {} сохранена в БД", savedRental.getId());
