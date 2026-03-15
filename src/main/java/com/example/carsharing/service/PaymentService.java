@@ -12,9 +12,12 @@ import com.example.carsharing.repository.RentalRepository;
 import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.PaymentMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,14 +33,14 @@ public class PaymentService {
 
     public PaymentResponse createPayment(PaymentCreateRequest request) {
         Rental rental = rentalRepository.findById(request.getRentalId())
-                .orElseThrow(() -> new RuntimeException("Rental not found with id: " + request.getRentalId()));
+                .orElseThrow(() -> new NoSuchElementException("Rental not found with id: " + request.getRentalId()));
 
         if (rental.getStatus() != RentalStatus.COMPLETED) {
-            throw new RuntimeException("Cannot create payment for incomplete rental. Status: " + rental.getStatus());
+            throw new InvalidDataAccessApiUsageException("Cannot create payment for incomplete rental. Status: " + rental.getStatus());
         }
 
         if (paymentRepository.existsByRentalId(request.getRentalId())) {
-            throw new RuntimeException("Payment already exists for rental: " + request.getRentalId());
+            throw new DataIntegrityViolationException("Payment already exists for rental: " + request.getRentalId());
         }
 
         User user = userRepository.findById(request.getUserId())
@@ -45,7 +48,7 @@ public class PaymentService {
 
         Rental.PriceDetails priceDetails = rental.getPriceDetails();
         if (priceDetails == null) {
-            throw new RuntimeException("Cannot calculate price for rental: " + request.getRentalId());
+            throw new IllegalStateException("Cannot calculate price for rental: " + request.getRentalId());
         }
 
         if (request.getTransactionId() == null || request.getTransactionId().isEmpty()) {
@@ -59,18 +62,6 @@ public class PaymentService {
 
         Payment savedPayment = paymentRepository.save(payment);
         return paymentMapper.toResponse(savedPayment);
-    }
-
-    public void createPaymentWithoutTransaction(PaymentCreateRequest request) {
-        // Этот метод БЕЗ @Transactional покажет частичное сохранение
-        // (детали добавим позже)
-    }
-
-    // НОВОЕ: Метод для демонстрации транзакций (полный откат)
-    @Transactional
-    public void createPaymentWithTransaction(PaymentCreateRequest request) {
-        // Этот метод С @Transactional покажет полный откат
-        // (детали добавим позже)
     }
 
     public PaymentResponse getPaymentById(Long id) {
@@ -87,18 +78,18 @@ public class PaymentService {
 
     public List<PaymentResponse> getUserPayments(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found with id: " + userId);
+            throw new NoSuchElementException("User not found with id: " + userId);
         }
 
         return paymentRepository.findByUserId(userId).stream()
                 .map(paymentMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<PaymentResponse> getAllPayments() {
         return paymentRepository.findAll().stream()
                 .map(paymentMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public PaymentResponse refundPayment(Long id) {
@@ -106,7 +97,7 @@ public class PaymentService {
                 .orElseThrow(() -> new RuntimeException("Payment not found with id: " + id));
 
         if (payment.getStatus() != PaymentStatus.COMPLETED) {
-            throw new RuntimeException("Cannot refund payment with status: " + payment.getStatus());
+            throw new InvalidDataAccessApiUsageException("Cannot refund payment with status: " + payment.getStatus());
         }
 
         payment.setStatus(PaymentStatus.REFUNDED);
