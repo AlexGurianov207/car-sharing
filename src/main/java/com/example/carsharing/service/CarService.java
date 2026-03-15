@@ -13,7 +13,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -25,10 +25,12 @@ public class CarService {
     private final ExtraServiceRepository extraServiceRepository;
 
     private static final String CAR_NOT_FOUND_MESSAGE = "Car not found with";
+    private static final String ID_MESSAGE = " id: ";
 
     public CarResponse createCar(CarCreateRequest request) {
         if (carRepository.existsByLicensePlate(request.getLicensePlate())) {
-            throw new DataIntegrityViolationException("Car with license plate " + request.getLicensePlate() + " already exists");
+            throw new DataIntegrityViolationException("Car with license plate "
+                    + request.getLicensePlate() + " already exists");
         }
 
         Car car = carMapper.toEntity(request);
@@ -38,7 +40,7 @@ public class CarService {
 
     public CarResponse findById(Long id) {
         Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + "id:" + id));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
         return carMapper.toResponse(car);
     }
 
@@ -58,24 +60,24 @@ public class CarService {
 
         return cars.stream()
                 .map(carMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<CarResponse> findByMaxPrice(Double maxPrice) {
         return carRepository.findByPricePerHourLessThanEqual(maxPrice).stream()
                 .map(carMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<CarResponse> findByBrandAndModel(String brand, String model) {
         return carRepository.findByBrandAndModel(brand, model).stream()
                 .map(carMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public CarResponse updateStatus(Long id, CarStatus status) {
         Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + " id: " + id));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
 
         car.setStatus(status);
         Car updatedCar = carRepository.save(car);
@@ -85,11 +87,12 @@ public class CarService {
 
     public CarResponse updateCar(Long id, CarCreateRequest request) {
         Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + " id: " + id));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
 
         if (!car.getLicensePlate().equals(request.getLicensePlate()) &&
                 carRepository.existsByLicensePlate(request.getLicensePlate())) {
-            throw new RuntimeException("License plate " + request.getLicensePlate() + " is already taken");
+            throw new DataIntegrityViolationException("License plate "
+                    + request.getLicensePlate() + " is already taken");
         }
 
         car.setBrand(request.getBrand());
@@ -104,19 +107,19 @@ public class CarService {
 
     public void deleteCar(Long id) {
         if (!carRepository.existsById(id)) {
-            throw new RuntimeException(CAR_NOT_FOUND_MESSAGE + " id: " + id);
+            throw new DataIntegrityViolationException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id);
         }
         carRepository.deleteById(id);
     }
 
     public CarResponse updateAvailableServices(Long carId, List<Long> serviceIds) {
         Car car = carRepository.findById(carId)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + " id: " + carId));
+                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + carId));
 
         List<ExtraService> services = extraServiceRepository.findAllById(serviceIds);
 
         if (services.size() != serviceIds.size()) {
-            throw new RuntimeException("Some services not found");
+            throw new DataIntegrityViolationException("Some services not found");
         }
 
         car.setAvailableServices(services);
