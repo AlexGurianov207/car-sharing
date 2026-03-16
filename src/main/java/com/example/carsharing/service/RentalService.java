@@ -156,7 +156,7 @@ public class RentalService {
 
     public void deleteRental(Long id) {
         if (!rentalRepository.existsById(id)) {
-            throw new NoSuchElementException("Rental not found with id: " + id);
+            throw new NoSuchElementException(RENTAL_NOT_FOUND_MESSAGE + id);
         }
 
         Rental rental = rentalRepository.findById(id).get();
