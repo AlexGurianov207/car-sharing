@@ -154,6 +154,20 @@ public class RentalService {
                 .toList();
     }
 
+    public void deleteRental(Long id) {
+        if (!rentalRepository.existsById(id)) {
+            throw new NoSuchElementException("Rental not found with id: " + id);
+        }
+
+        Rental rental = rentalRepository.findById(id).get();
+        if (rental.getStatus() == RentalStatus.ACTIVE) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot delete active rental. Complete or cancel it first.");
+        }
+
+        rentalRepository.deleteById(id);
+    }
+
     public List<RentalResponse> demonstrateNPlus1Problem() {
         log.info("========== ДЕМОНСТРАЦИЯ N+1 ПРОБЛЕМЫ ==========");
         List<Rental> rentals = rentalRepository.findAllSlow();
