@@ -2,16 +2,19 @@ package com.example.carsharing.service.mapper;
 
 import com.example.carsharing.dto.PaymentCreateRequest;
 import com.example.carsharing.dto.PaymentResponse;
-import com.example.carsharing.model.*;
+import com.example.carsharing.model.Car;
+import com.example.carsharing.model.Payment;
+import com.example.carsharing.model.PaymentMethod;
+import com.example.carsharing.model.Rental;
+import com.example.carsharing.model.User;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PaymentMapper {
 
-    public Payment toEntity(PaymentCreateRequest request, Rental rental, User user) {
+    public Payment toEntity(PaymentCreateRequest request, Rental rental) {
         Payment payment = new Payment();
         payment.setRental(rental);
-        payment.setUser(user);
         payment.setPaymentMethod(PaymentMethod.valueOf(String.valueOf(request.getPaymentMethod())));
         payment.setTransactionId(request.getTransactionId());
         return payment;
@@ -40,42 +43,17 @@ public class PaymentMapper {
 
         response.setTransactionId(payment.getTransactionId());
 
-        if (payment.getUser() != null) {
-            response.setUserId(payment.getUser().getId());
-            response.setUserFullName(
-                    (payment.getUser().getFirstName() != null ? payment.getUser().getFirstName() : "") + " " +
-                            (payment.getUser().getLastName() != null ? payment.getUser().getLastName() : "")
-            );
-        }
+        response.setUserFullName(payment.getUserFullNameSnapshot());
+        response.setCarInfo(payment.getCarInfoSnapshot());
+        response.setRentalStartTime(payment.getRentalStartTimeSnapshot());
+        response.setRentalEndTime(payment.getRentalEndTimeSnapshot());
+        response.setRentalHours(payment.getRentalHoursSnapshot());
 
         if (payment.getRental() != null) {
             response.setRentalId(payment.getRental().getId());
-
-            response.setRentalStartTime(payment.getRental().getStartTime());
-            response.setRentalEndTime(payment.getRental().getEndTime());
-
-            if (payment.getRental().getStartTime() != null && payment.getRental().getEndTime() != null) {
-                long hours = java.time.Duration.between(
-                        payment.getRental().getStartTime(),
-                        payment.getRental().getEndTime()
-                ).toHours();
-                response.setRentalHours(hours < 1 ? 1 : hours);
-            }
-
-            if (payment.getRental().getCar() != null) {
-                Car car = payment.getRental().getCar();
-                response.setCarInfo(
-                        (car.getBrand() != null ? car.getBrand() : "") + " " +
-                                (car.getModel() != null ? car.getModel() : "")
-                );
-            } else {
-                response.setCarInfo("Car deleted");
-            }
-        } else {
-            response.setRentalId(null);
-            response.setCarInfo("Car deleted");
-            response.setRentalHours(null);
         }
+
+        response.setSelectedServices(payment.getSelectedServicesSnapshot());
 
         return response;
     }

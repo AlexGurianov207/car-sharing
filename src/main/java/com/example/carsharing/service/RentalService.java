@@ -118,7 +118,6 @@ public class RentalService {
 
         Payment payment = new Payment();
         payment.setRental(rental);
-        payment.setUser(rental.getUser());
 
         Rental.PriceDetails priceDetails = rental.getPriceDetails();
         payment.setAmount(priceDetails.getTotalAmount());

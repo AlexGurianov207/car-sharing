@@ -57,7 +57,7 @@ public class PaymentService {
             request.setTransactionId("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         }
 
-        Payment payment = paymentMapper.toEntity(request, rental, user);
+        Payment payment = paymentMapper.toEntity(request, rental);
         payment.setAmount(priceDetails.getTotalAmount());
         payment.setCarAmount(priceDetails.getCarAmount());
         payment.setServicesAmount(priceDetails.getServicesAmount());
@@ -70,22 +70,6 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(PAYMENT_NOT_FOUND_MESSAGE + id));
         return paymentMapper.toResponse(payment);
-    }
-
-    public PaymentResponse getPaymentByRentalId(Long rentalId) {
-        Payment payment = paymentRepository.findByRentalId(rentalId)
-                .orElseThrow(() -> new RuntimeException(PAYMENT_NOT_FOUND_MESSAGE + rentalId));
-        return paymentMapper.toResponse(payment);
-    }
-
-    public List<PaymentResponse> getUserPayments(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new NoSuchElementException("User not found with id: " + userId);
-        }
-
-        return paymentRepository.findByUserId(userId).stream()
-                .map(paymentMapper::toResponse)
-                .toList();
     }
 
     public List<PaymentResponse> getAllPayments() {

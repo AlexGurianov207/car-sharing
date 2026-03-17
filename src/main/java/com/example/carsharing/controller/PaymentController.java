@@ -35,16 +35,6 @@ public class PaymentController {
         return paymentService.getPaymentById(id);
     }
 
-    @GetMapping("/by-rental/{rentalId}")
-    public PaymentResponse getPaymentByRentalId(@PathVariable Long rentalId) {
-        return paymentService.getPaymentByRentalId(rentalId);
-    }
-
-    @GetMapping("/user/{userId}")
-    public List<PaymentResponse> getUserPayments(@PathVariable Long userId) {
-        return paymentService.getUserPayments(userId);
-    }
-
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentResponse createPayment(@Valid @RequestBody PaymentCreateRequest request) {
