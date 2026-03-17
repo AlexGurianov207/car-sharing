@@ -2,13 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
-import com.example.carsharing.model.Car;
-import com.example.carsharing.model.CarStatus;
-import com.example.carsharing.model.ExtraService;
-import com.example.carsharing.model.Rental;
-import com.example.carsharing.model.RentalStatus;
-import com.example.carsharing.model.User;
-import com.example.carsharing.model.UserStatus;
+import com.example.carsharing.model.*;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.repository.RentalRepository;
@@ -23,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -99,7 +94,26 @@ public class RentalService {
         car.setStatus(CarStatus.AVAILABLE);
         carRepository.save(car);
 
+        Payment payment = new Payment();
+        payment.setRental(rental);
+        payment.setUser(rental.getUser());
+
+        Rental.PriceDetails priceDetails = rental.getPriceDetails();
+        payment.setAmount(priceDetails.getTotalAmount());
+        payment.setCarAmount(priceDetails.getCarAmount());
+        payment.setServicesAmount(priceDetails.getServicesAmount());
+
+        payment.setPaymentMethod(PaymentMethod.CARD);
+        payment.setStatus(PaymentStatus.COMPLETED);
+        payment.setTransactionId("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+
+        rental.setPayment(payment);
+
         Rental updatedRental = rentalRepository.save(rental);
+
+        log.info("Аренда завершена, платеж создан автоматически. ID платежа: {}",
+                updatedRental.getPayment().getId());
+
         return rentalMapper.toResponse(updatedRental);
     }
 
@@ -154,18 +168,19 @@ public class RentalService {
                 .toList();
     }
 
+    @Transactional
     public void deleteRental(Long id) {
-        if (!rentalRepository.existsById(id)) {
-            throw new NoSuchElementException(RENTAL_NOT_FOUND_MESSAGE + id);
-        }
+        Rental rental = rentalRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Rental not found"));
 
-        Rental rental = rentalRepository.findById(id).get();
         if (rental.getStatus() == RentalStatus.ACTIVE) {
             throw new InvalidDataAccessApiUsageException(
                     "Cannot delete active rental. Complete or cancel it first.");
         }
 
-        rentalRepository.deleteById(id);
+        rentalRepository.delete(rental);
+
+        log.info("Аренда {} и связанный платеж удалены", id);
     }
 
     public List<RentalResponse> demonstrateNPlus1Problem() {
