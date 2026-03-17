@@ -12,10 +12,7 @@ import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.RentalStatus;
 import com.example.carsharing.model.User;
 import com.example.carsharing.model.UserStatus;
-import com.example.carsharing.repository.CarRepository;
-import com.example.carsharing.repository.ExtraServiceRepository;
-import com.example.carsharing.repository.RentalRepository;
-import com.example.carsharing.repository.UserRepository;
+import com.example.carsharing.repository.*;
 import com.example.carsharing.service.mapper.RentalMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +35,7 @@ public class RentalService {
     private final CarRepository carRepository;
     private final ExtraServiceRepository extraServiceRepository;
     private final RentalMapper rentalMapper;
+    private final PaymentRepository paymentRepository;
 
     private static final String CAR_NOT_FOUND_MESSAGE = "Car not found";
     private static final String USER_NOT_FOUND_MESSAGE = "User not found";
@@ -135,9 +133,6 @@ public class RentalService {
 
         Rental updatedRental = rentalRepository.save(rental);
 
-        log.info("Аренда завершена, платеж создан автоматически. ID платежа: {}",
-                updatedRental.getPayment().getId());
-
         return rentalMapper.toResponse(updatedRental);
     }
 
@@ -181,6 +176,12 @@ public class RentalService {
         if (rental.getStatus() == RentalStatus.ACTIVE) {
             throw new InvalidDataAccessApiUsageException(
                     "Cannot delete active rental. Complete or cancel it first.");
+        }
+
+        Payment payment = rental.getPayment();
+        if (payment != null) {
+            payment.setRental(null);
+            paymentRepository.save(payment);
         }
 
         rentalRepository.delete(rental);

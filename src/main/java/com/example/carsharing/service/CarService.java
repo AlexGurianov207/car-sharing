@@ -5,6 +5,7 @@ import com.example.carsharing.dto.CarResponse;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.model.ExtraService;
+import com.example.carsharing.model.Rental;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.repository.RentalRepository;
@@ -95,6 +96,13 @@ public class CarService {
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
 
         checkNotRented(id, car);
+
+        List<Rental> userRentals = rentalRepository.findByUserId(id);
+        if (!userRentals.isEmpty()) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot update user with rental history. User has " +
+                            userRentals.size() + " past rentals.");
+        }
 
         if (!car.getLicensePlate().equals(request.getLicensePlate()) &&
                 carRepository.existsByLicensePlate(request.getLicensePlate())) {

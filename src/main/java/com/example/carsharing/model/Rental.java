@@ -63,7 +63,7 @@ public class Rental {
     @ToString.Exclude
     private List<ExtraService> selectedServices = new ArrayList<>();
 
-    @OneToOne(mappedBy = "rental", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "rental", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @ToString.Exclude
     private Payment payment;
 

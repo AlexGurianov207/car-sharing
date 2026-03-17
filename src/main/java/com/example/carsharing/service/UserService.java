@@ -2,6 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
+import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.User;
 import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.repository.RentalRepository;
@@ -63,14 +64,11 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
 
-        if (rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
+        List<Rental> userRentals = rentalRepository.findByUserId(id);
+        if (!userRentals.isEmpty()) {
             throw new InvalidDataAccessApiUsageException(
-                    "Cannot update user with active rental");
-        }
-
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new InvalidDataAccessApiUsageException(
-                    "Cannot update non-active user");
+                    "Cannot update user with rental history. User has " +
+                            userRentals.size() + " past rentals.");
         }
 
         user.setFirstName(request.getFirstName());
