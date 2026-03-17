@@ -278,6 +278,8 @@ public class RentalService {
                             " is not available for this car");
                 }
             }
+
+            rental.setSelectedServices(services);
         }
 
         log.info("Транзакция успешно завершена. Аренда {} сохранена в БД", savedRental.getId());
