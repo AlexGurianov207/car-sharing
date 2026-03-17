@@ -7,6 +7,7 @@ import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
+import com.example.carsharing.repository.RentalRepository;
 import com.example.carsharing.service.mapper.CarMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -25,9 +26,20 @@ public class CarService {
     private final CarRepository carRepository;
     private final CarMapper carMapper;
     private final ExtraServiceRepository extraServiceRepository;
+    private final RentalRepository rentalRepository;
 
     private static final String CAR_NOT_FOUND_MESSAGE = "Car not found with";
     private static final String ID_MESSAGE = " id: ";
+
+    private void checkNotRented(Long carId, Car car) {
+        if (car.getStatus() == CarStatus.RENTED) {
+            boolean hasActiveRental = rentalRepository.existsByCarIdAndEndTimeIsNull(carId);
+            if (hasActiveRental) {
+                throw new InvalidDataAccessApiUsageException(
+                        "Cannot modify car with active rental");
+            }
+        }
+    }
 
     public CarResponse createCar(CarCreateRequest request) {
         if (carRepository.existsByLicensePlate(request.getLicensePlate())) {
@@ -77,29 +89,11 @@ public class CarService {
                 .toList();
     }
 
-    public CarResponse updateStatus(Long id, CarStatus status) {
-        Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
-
-        if (car.getStatus() == CarStatus.RENTED) {
-            throw new InvalidDataAccessApiUsageException(
-                    "Cannot update car with active rental");
-        }
-
-        car.setStatus(status);
-        Car updatedCar = carRepository.save(car);
-
-        return carMapper.toResponse(updatedCar);
-    }
-
     public CarResponse updateCar(Long id, CarCreateRequest request) {
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
 
-        if (car.getStatus() == CarStatus.RENTED) {
-            throw new InvalidDataAccessApiUsageException(
-                    "Cannot update car with active rental");
-        }
+        checkNotRented(id, car);
 
         if (!car.getLicensePlate().equals(request.getLicensePlate()) &&
                 carRepository.existsByLicensePlate(request.getLicensePlate())) {
@@ -132,6 +126,8 @@ public class CarService {
     public CarResponse updateAvailableServices(Long carId, List<Long> serviceIds) {
         Car car = carRepository.findById(carId)
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + carId));
+
+        checkNotRented(carId, car);
 
         List<ExtraService> services = extraServiceRepository.findAllById(serviceIds);
 
