@@ -2,6 +2,7 @@ package com.example.carsharing.controller;
 
 import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
+import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -53,9 +54,9 @@ public class UserController {
         return userService.updateUser(id, request);
     }
 
-    @PatchMapping("/{id}/block")
-    public void blockUser(@PathVariable Long id) {
-        userService.blockUser(id);
+    @PatchMapping("/{id}/status")
+    public void updateUserStatus(@PathVariable Long id, @RequestParam UserStatus status) {
+        userService.updateUserStatus(id, status);
     }
 
     @DeleteMapping("/{id}")

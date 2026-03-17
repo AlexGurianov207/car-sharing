@@ -53,10 +53,9 @@ public class ExtraServiceController {
         return extraServiceService.updateService(id, request);
     }
 
-    @PatchMapping("/{id}/deactivate")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivateService(@PathVariable Long id) {
-        extraServiceService.deactivateService(id);
+    @PatchMapping("/{id}/status")
+    public void updateServiceStatus(@PathVariable Long id, @RequestParam Boolean isActive) {
+        extraServiceService.updateServiceStatus(id, isActive);
     }
 
     @DeleteMapping("/{id}")

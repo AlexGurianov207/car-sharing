@@ -4,5 +4,5 @@ public enum ServiceCategory {
     SAFETY,
     COMFORT,
     EQUIPMENT,
-    INSURANCE;
+    INSURANCE
 }

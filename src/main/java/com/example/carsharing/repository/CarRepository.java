@@ -16,6 +16,8 @@ public interface CarRepository extends JpaRepository<Car, Long> {
 
     List<Car> findByBrandAndModel(String brand, String model);
 
+    List<Car> findByAvailableServicesId(Long serviceId);
+
     List<Car> findByPricePerHourLessThanEqual(Double maxPrice);
 
     boolean existsByLicensePlate(String licensePlate);

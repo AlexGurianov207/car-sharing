@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -133,6 +134,18 @@ public class CarService {
 
         if (services.size() != serviceIds.size()) {
             throw new DataIntegrityViolationException("Some services not found");
+        }
+
+        List<ExtraService> inactiveServices = services.stream()
+                .filter(service -> !service.getIsActive())
+                .toList();
+
+        if (!inactiveServices.isEmpty()) {
+            String inactiveNames = inactiveServices.stream()
+                    .map(ExtraService::getName)
+                    .collect(Collectors.joining(", "));
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot add inactive services: " + inactiveNames);
         }
 
         car.setAvailableServices(services);

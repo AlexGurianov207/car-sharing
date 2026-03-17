@@ -64,18 +64,42 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
 
+        if (rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot update user with active rental");
+        }
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot update non-active user");
+        }
+
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhoneNumber(request.getPhoneNumber());
+        user.setEmail(request.getEmail());
+        user.setDriverLicense(request.getDriverLicense());
 
         User updatedUser = userRepository.save(user);
         return userMapper.toResponse(updatedUser);
     }
 
-    public void blockUser(Long id) {
+    public void updateUserStatus(Long id, UserStatus newStatus) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
-        user.setStatus(UserStatus.BLOCKED);
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        if (newStatus != UserStatus.ACTIVE && newStatus != UserStatus.BLOCKED) {
+            throw new IllegalArgumentException("Status can only be changed to ACTIVE or BLOCKED");
+        }
+
+        if (newStatus == UserStatus.BLOCKED) {
+            if (rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
+                throw new InvalidDataAccessApiUsageException(
+                        "Cannot block user with active rental");
+            }
+        }
+
+        user.setStatus(newStatus);
         userRepository.save(user);
     }
 
