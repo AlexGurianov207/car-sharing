@@ -4,5 +4,5 @@ public enum PaymentMethod {
     CARD,
     CASH,
     APPLE_PAY,
-    GOOGLE_PAY;
+    GOOGLE_PAY
 }
