@@ -7,6 +7,8 @@ import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.User;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Component
@@ -18,6 +20,8 @@ public class RentalMapper {
         rental.setCar(car);
         if (request.getStartTime() != null) {
             rental.setStartTime(request.getStartTime());
+        } else {
+            rental.setStartTime(LocalDateTime.now());
         }
         return rental;
     }

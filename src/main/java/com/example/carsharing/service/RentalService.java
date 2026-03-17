@@ -2,7 +2,16 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
-import com.example.carsharing.model.*;
+import com.example.carsharing.model.Car;
+import com.example.carsharing.model.CarStatus;
+import com.example.carsharing.model.ExtraService;
+import com.example.carsharing.model.Payment;
+import com.example.carsharing.model.PaymentMethod;
+import com.example.carsharing.model.PaymentStatus;
+import com.example.carsharing.model.Rental;
+import com.example.carsharing.model.RentalStatus;
+import com.example.carsharing.model.User;
+import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.repository.RentalRepository;
@@ -56,6 +65,13 @@ public class RentalService {
 
         Rental rental = rentalMapper.toEntity(request, user, car);
 
+        LocalDateTime now = LocalDateTime.now();
+        if (rental.getStartTime().isBefore(now)) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Start time cannot be in the past. Requested: " + rental.getStartTime() +
+                            ", Current time: " + now);
+        }
+
         if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
             List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
             if (services.size() != request.getServiceIds().size()) {
@@ -87,7 +103,15 @@ public class RentalService {
             throw new InvalidDataAccessApiUsageException("Rental is not active. Status: " + rental.getStatus());
         }
 
-        rental.setEndTime(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+
+        if (now.isBefore(rental.getStartTime())) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot complete rental before it started. Start time: " +
+                            rental.getStartTime() + ", current time: " + now);
+        }
+
+        rental.setEndTime(now);
         rental.setStatus(RentalStatus.COMPLETED);
 
         Car car = rental.getCar();
@@ -123,6 +147,13 @@ public class RentalService {
 
         if (rental.getStatus() != RentalStatus.ACTIVE) {
             throw new InvalidDataAccessApiUsageException("Rental is not active. Status: " + rental.getStatus());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (now.isBefore(rental.getStartTime())) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot cancel rental before it started");
         }
 
         rental.setStatus(RentalStatus.CANCELLED);
