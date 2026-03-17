@@ -56,11 +56,6 @@ public class RentalController {
         return rentalService.completeRental(id);
     }
 
-    @PatchMapping("/{id}/cancel")
-    public RentalResponse cancelRental(@PathVariable Long id) {
-        return rentalService.cancelRental(id);
-    }
-
     @GetMapping("/demo/n-plus-one")
     public List<RentalResponse> demonstrateNPlus1() {
         return rentalService.demonstrateNPlus1Problem();

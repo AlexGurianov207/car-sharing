@@ -78,29 +78,6 @@ public class Rental {
         }
     }
 
-    public Double calculateTotalPrice() {
-        if (endTime == null) {
-            return null;
-        }
-
-        long hours = Duration.between(startTime, endTime).toHours();
-        if (hours < 1) {
-            hours = 1;
-        }
-
-        double carPrice = car.getPricePerHour() * hours;
-
-        long finalHours = hours;
-        double servicesPrice = selectedServices.stream()
-                .mapToDouble(service -> {
-                    long days = (finalHours / 24) + (((finalHours % 24) == 0) ? 0 : 1);
-                    return service.getPricePerDay() * days;
-                })
-                .sum();
-
-        return carPrice + servicesPrice;
-    }
-
     public PriceDetails getPriceDetails() {
         if (endTime == null) {
             return null;

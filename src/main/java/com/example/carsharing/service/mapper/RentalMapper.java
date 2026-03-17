@@ -18,11 +18,7 @@ public class RentalMapper {
         Rental rental = new Rental();
         rental.setUser(user);
         rental.setCar(car);
-        if (request.getStartTime() != null) {
-            rental.setStartTime(request.getStartTime());
-        } else {
-            rental.setStartTime(LocalDateTime.now());
-        }
+        rental.setStartTime(LocalDateTime.now());
         return rental;
     }
 

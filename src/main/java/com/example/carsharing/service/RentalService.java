@@ -141,32 +141,6 @@ public class RentalService {
         return rentalMapper.toResponse(updatedRental);
     }
 
-    public RentalResponse cancelRental(Long id) {
-        Rental rental = rentalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
-
-        if (rental.getStatus() != RentalStatus.ACTIVE) {
-            throw new InvalidDataAccessApiUsageException("Rental is not active. Status: " + rental.getStatus());
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-
-        if (now.isBefore(rental.getStartTime())) {
-            throw new InvalidDataAccessApiUsageException(
-                    "Cannot cancel rental before it started");
-        }
-
-        rental.setStatus(RentalStatus.CANCELLED);
-        rental.setEndTime(LocalDateTime.now());
-
-        Car car = rental.getCar();
-        car.setStatus(CarStatus.AVAILABLE);
-        carRepository.save(car);
-
-        Rental updatedRental = rentalRepository.save(rental);
-        return rentalMapper.toResponse(updatedRental);
-    }
-
     public RentalResponse getRentalById(Long id) {
         Rental rental = rentalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
