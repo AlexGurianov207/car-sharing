@@ -79,7 +79,7 @@ public class ExtraServiceService {
         return extraServiceMapper.toResponse(updatedService);
     }
 
-    public void updateServiceStatus(Long id, Boolean isActive) {
+    public void updateServiceStatus(Long id, boolean isActive) {
         ExtraService service = extraServiceRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Service not found"));
 

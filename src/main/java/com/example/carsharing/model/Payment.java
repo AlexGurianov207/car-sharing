@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -76,39 +75,66 @@ public class Payment {
     @PrePersist
     protected void onCreate() {
         paymentDate = LocalDateTime.now();
+        setDefaultStatusIfNull();
+
+        if (rental != null) {
+            setUserFullNameSnapshot();
+            setCarInfoSnapshot();
+            setRentalTimeSnapshots();
+            setRentalHoursSnapshot();
+            setSelectedServicesSnapshot();
+        }
+    }
+
+    private void setDefaultStatusIfNull() {
         if (status == null) {
             status = PaymentStatus.COMPLETED;
         }
+    }
 
-        if (rental != null) {
-            if (rental.getUser() != null) {
-                this.userFullNameSnapshot =
-                        (rental.getUser().getFirstName() != null ? rental.getUser().getFirstName() : "") + " " +
-                                (rental.getUser().getLastName() != null ? rental.getUser().getLastName() : "");
-                this.userFullNameSnapshot = this.userFullNameSnapshot.trim();
-            }
-
-            if (rental.getCar() != null) {
-                this.carInfoSnapshot =
-                        (rental.getCar().getBrand() != null ? rental.getCar().getBrand() : "") + " " +
-                                (rental.getCar().getModel() != null ? rental.getCar().getModel() : "") +
-                                (rental.getCar().getLicensePlate() != null ? " (" + rental.getCar().getLicensePlate() + ")" : "");
-                this.carInfoSnapshot = this.carInfoSnapshot.trim();
-            }
-
-            this.rentalStartTimeSnapshot = rental.getStartTime();
-            this.rentalEndTimeSnapshot = rental.getEndTime();
-
-            if (rental.getStartTime() != null && rental.getEndTime() != null) {
-                long hours = Duration.between(rental.getStartTime(), rental.getEndTime()).toHours();
-                this.rentalHoursSnapshot = hours < 1 ? 1 : hours;
-            }
-
-            if (rental.getSelectedServices() != null && !rental.getSelectedServices().isEmpty()) {
-                this.selectedServicesSnapshot = rental.getSelectedServices().stream()
-                        .map(ExtraService::getName)
-                        .collect(Collectors.joining(", "));
-            }
+    private void setUserFullNameSnapshot() {
+        if (rental.getUser() != null) {
+            String firstName = getValueOrDefault(rental.getUser().getFirstName());
+            String lastName = getValueOrDefault(rental.getUser().getLastName());
+            this.userFullNameSnapshot = (firstName + " " + lastName).trim();
         }
+    }
+
+    private void setCarInfoSnapshot() {
+        if (rental.getCar() != null) {
+            String brand = getValueOrDefault(rental.getCar().getBrand());
+            String model = getValueOrDefault(rental.getCar().getModel());
+            String licensePlate = rental.getCar().getLicensePlate();
+
+            this.carInfoSnapshot = brand + " " + model;
+            if (licensePlate != null) {
+                this.carInfoSnapshot += " (" + licensePlate + ")";
+            }
+            this.carInfoSnapshot = this.carInfoSnapshot.trim();
+        }
+    }
+
+    private void setRentalTimeSnapshots() {
+        this.rentalStartTimeSnapshot = rental.getStartTime();
+        this.rentalEndTimeSnapshot = rental.getEndTime();
+    }
+
+    private void setRentalHoursSnapshot() {
+        if (rental.getStartTime() != null && rental.getEndTime() != null) {
+            long hours = Duration.between(rental.getStartTime(), rental.getEndTime()).toHours();
+            this.rentalHoursSnapshot = Math.max(1, hours);
+        }
+    }
+
+    private void setSelectedServicesSnapshot() {
+        if (rental.getSelectedServices() != null && !rental.getSelectedServices().isEmpty()) {
+            this.selectedServicesSnapshot = rental.getSelectedServices().stream()
+                    .map(ExtraService::getName)
+                    .collect(Collectors.joining(", "));
+        }
+    }
+
+    private String getValueOrDefault(String value) {
+        return value != null ? value : "";
     }
 }

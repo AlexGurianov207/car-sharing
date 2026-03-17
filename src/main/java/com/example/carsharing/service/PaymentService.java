@@ -6,10 +6,8 @@ import com.example.carsharing.model.Payment;
 import com.example.carsharing.model.PaymentStatus;
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.RentalStatus;
-import com.example.carsharing.model.User;
 import com.example.carsharing.repository.PaymentRepository;
 import com.example.carsharing.repository.RentalRepository;
-import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.PaymentMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,7 +25,6 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final RentalRepository rentalRepository;
-    private final UserRepository userRepository;
     private final PaymentMapper paymentMapper;
 
     private static final String PAYMENT_NOT_FOUND_MESSAGE = "Payment not found with id:";
@@ -44,9 +41,6 @@ public class PaymentService {
         if (paymentRepository.existsByRentalId(request.getRentalId())) {
             throw new DataIntegrityViolationException("Payment already exists for rental: " + request.getRentalId());
         }
-
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
         Rental.PriceDetails priceDetails = rental.getPriceDetails();
         if (priceDetails == null) {

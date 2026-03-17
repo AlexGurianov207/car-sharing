@@ -12,7 +12,11 @@ import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.RentalStatus;
 import com.example.carsharing.model.User;
 import com.example.carsharing.model.UserStatus;
-import com.example.carsharing.repository.*;
+import com.example.carsharing.repository.CarRepository;
+import com.example.carsharing.repository.ExtraServiceRepository;
+import com.example.carsharing.repository.PaymentRepository;
+import com.example.carsharing.repository.RentalRepository;
+import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.RentalMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +65,7 @@ public class RentalService {
             throw new DataIntegrityViolationException("Car is already rented");
         }
 
-        Rental rental = rentalMapper.toEntity(request, user, car);
+        Rental rental = rentalMapper.toEntity(user, car);
 
         LocalDateTime now = LocalDateTime.now();
         if (rental.getStartTime().isBefore(now)) {

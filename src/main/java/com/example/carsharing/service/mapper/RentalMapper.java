@@ -1,6 +1,5 @@
 package com.example.carsharing.service.mapper;
 
-import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.ExtraService;
@@ -14,7 +13,7 @@ import java.util.stream.Collectors;
 @Component
 public class RentalMapper {
 
-    public Rental toEntity(RentalCreateRequest request, User user, Car car) {
+    public Rental toEntity(User user, Car car) {
         Rental rental = new Rental();
         rental.setUser(user);
         rental.setCar(car);

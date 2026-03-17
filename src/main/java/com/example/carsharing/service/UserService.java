@@ -89,11 +89,9 @@ public class UserService {
             throw new IllegalArgumentException("Status can only be changed to ACTIVE or BLOCKED");
         }
 
-        if (newStatus == UserStatus.BLOCKED) {
-            if (rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
-                throw new InvalidDataAccessApiUsageException(
-                        "Cannot block user with active rental");
-            }
+        if (newStatus == UserStatus.BLOCKED && rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot block user with active rental");
         }
 
         user.setStatus(newStatus);

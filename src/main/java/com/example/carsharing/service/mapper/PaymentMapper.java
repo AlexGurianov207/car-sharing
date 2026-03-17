@@ -2,11 +2,9 @@ package com.example.carsharing.service.mapper;
 
 import com.example.carsharing.dto.PaymentCreateRequest;
 import com.example.carsharing.dto.PaymentResponse;
-import com.example.carsharing.model.Car;
 import com.example.carsharing.model.Payment;
 import com.example.carsharing.model.PaymentMethod;
 import com.example.carsharing.model.Rental;
-import com.example.carsharing.model.User;
 import org.springframework.stereotype.Component;
 
 @Component
