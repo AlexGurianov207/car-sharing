@@ -10,9 +10,11 @@ import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.service.mapper.CarMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 
 @Service
@@ -79,6 +81,11 @@ public class CarService {
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
 
+        if (car.getStatus() == CarStatus.RENTED) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot update car with active rental");
+        }
+
         car.setStatus(status);
         Car updatedCar = carRepository.save(car);
 
@@ -88,6 +95,11 @@ public class CarService {
     public CarResponse updateCar(Long id, CarCreateRequest request) {
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
+
+        if (car.getStatus() == CarStatus.RENTED) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot update car with active rental");
+        }
 
         if (!car.getLicensePlate().equals(request.getLicensePlate()) &&
                 carRepository.existsByLicensePlate(request.getLicensePlate())) {
@@ -106,9 +118,14 @@ public class CarService {
     }
 
     public void deleteCar(Long id) {
-        if (!carRepository.existsById(id)) {
-            throw new DataIntegrityViolationException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id);
+        Car car = carRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Car not found"));
+
+        if (car.getStatus() == CarStatus.RENTED) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot delete rented car");
         }
+
         carRepository.deleteById(id);
     }
 

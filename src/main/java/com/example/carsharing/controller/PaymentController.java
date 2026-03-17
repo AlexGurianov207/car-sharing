@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.List;
 
@@ -53,5 +54,11 @@ public class PaymentController {
     @PatchMapping("/{id}/refund")
     public PaymentResponse refundPayment(@PathVariable Long id) {
         return paymentService.refundPayment(id);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletePayment(@PathVariable Long id) {
+        paymentService.deletePayment(id);
     }
 }

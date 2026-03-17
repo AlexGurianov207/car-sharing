@@ -105,4 +105,18 @@ public class PaymentService {
 
         return paymentMapper.toResponse(updatedPayment);
     }
+
+    @Transactional
+    public void deletePayment(Long id) {
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Payment not found with id: " + id));
+
+        Rental rental = payment.getRental();
+        if (rental != null) {
+            rental.setPayment(null);
+            rentalRepository.save(rental);
+        }
+
+        paymentRepository.delete(payment);
+    }
 }
