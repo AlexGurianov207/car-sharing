@@ -82,7 +82,7 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("User not found with id: " + id));
+                .orElseThrow(() -> new NoSuchElementException(USER_NOT_FOUND_MESSAGE + id));
 
         boolean hasActiveRentals = rentalRepository.existsByUserIdAndEndTimeIsNull(id);
 

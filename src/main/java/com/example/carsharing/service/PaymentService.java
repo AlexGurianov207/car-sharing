@@ -30,6 +30,8 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final PaymentMapper paymentMapper;
 
+    private static final String PAYMENT_NOT_FOUND_MESSAGE = "Payment not found with id:";
+
     public PaymentResponse createPayment(PaymentCreateRequest request) {
         Rental rental = rentalRepository.findById(request.getRentalId())
                 .orElseThrow(() -> new NoSuchElementException("Rental not found with id: " + request.getRentalId()));
@@ -66,13 +68,13 @@ public class PaymentService {
 
     public PaymentResponse getPaymentById(Long id) {
         Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payment not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(PAYMENT_NOT_FOUND_MESSAGE + id));
         return paymentMapper.toResponse(payment);
     }
 
     public PaymentResponse getPaymentByRentalId(Long rentalId) {
         Payment payment = paymentRepository.findByRentalId(rentalId)
-                .orElseThrow(() -> new RuntimeException("Payment not found for rental: " + rentalId));
+                .orElseThrow(() -> new RuntimeException(PAYMENT_NOT_FOUND_MESSAGE + rentalId));
         return paymentMapper.toResponse(payment);
     }
 
@@ -94,7 +96,7 @@ public class PaymentService {
 
     public PaymentResponse refundPayment(Long id) {
         Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payment not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(PAYMENT_NOT_FOUND_MESSAGE + id));
 
         if (payment.getStatus() != PaymentStatus.COMPLETED) {
             throw new InvalidDataAccessApiUsageException("Cannot refund payment with status: " + payment.getStatus());
@@ -109,7 +111,7 @@ public class PaymentService {
     @Transactional
     public void deletePayment(Long id) {
         Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Payment not found with id: " + id));
+                .orElseThrow(() -> new NoSuchElementException(PAYMENT_NOT_FOUND_MESSAGE + id));
 
         Rental rental = payment.getRental();
         if (rental != null) {
