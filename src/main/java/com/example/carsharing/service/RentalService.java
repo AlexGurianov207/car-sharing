@@ -24,10 +24,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -54,6 +57,11 @@ public class RentalService {
             throw new InvalidDataAccessApiUsageException("User is not active. Status: " + user.getStatus());
         }
 
+        if (rentalRepository.existsByUserIdAndEndTimeIsNull(user.getId())) {
+            throw new InvalidDataAccessApiUsageException(
+                    "User already has an active rental. Complete it first.");
+        }
+
         Car car = carRepository.findById(request.getCarId())
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + request.getCarId()));
 
@@ -66,13 +74,6 @@ public class RentalService {
         }
 
         Rental rental = rentalMapper.toEntity(user, car);
-
-        LocalDateTime now = LocalDateTime.now();
-        if (rental.getStartTime().isBefore(now)) {
-            throw new InvalidDataAccessApiUsageException(
-                    "Start time cannot be in the past. Requested: " + rental.getStartTime() +
-                            ", Current time: " + now);
-        }
 
         if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
             List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
@@ -114,26 +115,53 @@ public class RentalService {
         }
 
         rental.setEndTime(now);
-        rental.setStatus(RentalStatus.COMPLETED);
+
+        User user = rental.getUser();
+        rental.setUserFullName(user.getFirstName() + " " + user.getLastName());
 
         Car car = rental.getCar();
-        car.setStatus(CarStatus.AVAILABLE);
-        carRepository.save(car);
+        rental.setCarInfo(car.getBrand() + " " + car.getModel() + " (" + car.getLicensePlate() + ")");
+
+        if (rental.getSelectedServices() != null && !rental.getSelectedServices().isEmpty()) {
+            String servicesString = rental.getSelectedServices().stream()
+                    .map(ExtraService::getName)
+                    .collect(Collectors.joining(";"));
+            rental.setServiceNames(servicesString);
+        }
+
+        long hours = Duration.between(rental.getStartTime(), now).toHours();
+        if (hours < 1) {
+            hours = 1;
+        }
+        long days = hours / 24 + (hours % 24 == 0 ? 0 : 1);
+
+        double carPrice = car.getPricePerHour() * hours;
+        double servicesPrice = rental.getSelectedServices().stream()
+                .mapToDouble(s -> s.getPricePerDay() * days)
+                .sum();
 
         Payment payment = new Payment();
         payment.setRental(rental);
-
-        Rental.PriceDetails priceDetails = rental.getPriceDetails();
-        payment.setAmount(priceDetails.getTotalAmount());
-        payment.setCarAmount(priceDetails.getCarAmount());
-        payment.setServicesAmount(priceDetails.getServicesAmount());
-
+        payment.setAmount(carPrice + servicesPrice);
+        payment.setCarAmount(carPrice);
+        payment.setServicesAmount(servicesPrice);
+        payment.setRentalHours(hours);
+        payment.setRentalDays(days);
         payment.setPaymentMethod(PaymentMethod.CARD);
         payment.setStatus(PaymentStatus.COMPLETED);
         payment.setTransactionId("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
-        rental.setPayment(payment);
+        rental.setUser(null);
+        rental.setCar(null);
+        rental.setSelectedServices(null);
 
+        rental.setStatus(RentalStatus.COMPLETED);
+
+        car.setStatus(CarStatus.AVAILABLE);
+        carRepository.save(car);
+
+        rental.setPayment(payment);
+        paymentRepository.save(payment);
         Rental updatedRental = rentalRepository.save(rental);
 
         return rentalMapper.toResponse(updatedRental);
@@ -150,7 +178,13 @@ public class RentalService {
             throw new NoSuchElementException("User not found with id: " + userId);
         }
 
-        return rentalRepository.findByUserId(userId).stream()
+        List<Rental> rentals = rentalRepository.findByUserId(userId);
+
+        if (rentals.isEmpty()) {
+            throw new NoSuchElementException("No rentals found for user with id: " + userId);
+        }
+
+        return rentals.stream()
                 .map(rentalMapper::toResponse)
                 .toList();
     }
@@ -160,13 +194,25 @@ public class RentalService {
             throw new NoSuchElementException("Car not found with id: " + carId);
         }
 
-        return rentalRepository.findByCarId(carId).stream()
+        List<Rental> rentals = rentalRepository.findByCarId(carId);
+
+        if (rentals.isEmpty()) {
+            throw new NoSuchElementException("No rentals found for car with id: " + carId);
+        }
+
+        return rentals.stream()
                 .map(rentalMapper::toResponse)
                 .toList();
     }
 
     public List<RentalResponse> getActiveRentals() {
-        return rentalRepository.findByEndTimeIsNull().stream()
+        List<Rental> rentals = rentalRepository.findByEndTimeIsNull();
+
+        if (rentals.isEmpty()) {
+            throw new NoSuchElementException("No active rentals found");
+        }
+
+        return rentals.stream()
                 .map(rentalMapper::toResponse)
                 .toList();
     }

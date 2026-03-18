@@ -7,6 +7,8 @@ import com.example.carsharing.model.PaymentMethod;
 import com.example.carsharing.model.Rental;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+
 @Component
 public class PaymentMapper {
 
@@ -41,17 +43,40 @@ public class PaymentMapper {
 
         response.setTransactionId(payment.getTransactionId());
 
-        response.setUserFullName(payment.getUserFullNameSnapshot());
-        response.setCarInfo(payment.getCarInfoSnapshot());
-        response.setRentalStartTime(payment.getRentalStartTimeSnapshot());
-        response.setRentalEndTime(payment.getRentalEndTimeSnapshot());
-        response.setRentalHours(payment.getRentalHoursSnapshot());
-
         if (payment.getRental() != null) {
-            response.setRentalId(payment.getRental().getId());
-        }
+            Rental rental = payment.getRental();
 
-        response.setSelectedServices(payment.getSelectedServicesSnapshot());
+            response.setRentalId(rental.getId());
+
+            if (rental.getUserFullName() != null) {
+                response.setUserFullName(rental.getUserFullName());
+            } else if (rental.getUser() != null) {
+                response.setUserFullName(rental.getUser().getFirstName() + " " +
+                        rental.getUser().getLastName());
+            }
+
+            if (rental.getCarInfo() != null) {
+                response.setCarInfo(rental.getCarInfo());
+            } else if (rental.getCar() != null) {
+                response.setCarInfo(rental.getCar().getBrand() + " " +
+                        rental.getCar().getModel() + " (" +
+                        rental.getCar().getLicensePlate() + ")");
+            }
+
+            response.setRentalStartTime(rental.getStartTime());
+            response.setRentalEndTime(rental.getEndTime());
+
+            if (payment.getRentalHours() != null) {
+                response.setRentalHours(payment.getRentalHours());
+            } else if (rental.getStartTime() != null && rental.getEndTime() != null) {
+                long hours = Duration.between(rental.getStartTime(), rental.getEndTime()).toHours();
+                response.setRentalHours(Math.max(1, hours));
+            }
+
+            if (rental.getServiceNames() != null) {
+                response.setSelectedServices(rental.getServiceNames());
+            }
+        }
 
         return response;
     }

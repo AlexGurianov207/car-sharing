@@ -16,11 +16,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 import java.time.LocalDateTime;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,11 +32,11 @@ public class Rental {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "car_id", nullable = false)
+    @JoinColumn(name = "car_id", nullable = true)
     private Car car;
 
     @Column(name = "start_time", nullable = false)
@@ -50,9 +48,6 @@ public class Rental {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private RentalStatus status;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
 
     @ManyToMany
     @JoinTable(
@@ -67,43 +62,22 @@ public class Rental {
     @ToString.Exclude
     private Payment payment;
 
+    @Column(name = "user_full_name")
+    private String userFullName;
+
+    @Column(name = "car_info")
+    private String carInfo;
+
+    @Column(name = "service_names", length = 1000)
+    private String serviceNames;
+
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
         if (startTime == null) {
             startTime = LocalDateTime.now();
         }
         if (status == null) {
             status = RentalStatus.ACTIVE;
         }
-    }
-
-    public PriceDetails getPriceDetails() {
-        if (endTime == null) {
-            return null;
-        }
-
-        long hours = Duration.between(startTime, endTime).toHours();
-        if (hours < 1) {
-            hours = 1;
-        }
-        long days = hours / 24 + (hours % 24 == 0 ? 0 : 1);
-
-        double carPrice = car.getPricePerHour() * hours;
-        double servicesPrice = selectedServices.stream()
-                .mapToDouble(s -> s.getPricePerDay() * days)
-                .sum();
-
-        return new PriceDetails(carPrice, servicesPrice, carPrice + servicesPrice, hours, days);
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class PriceDetails {
-        private double carAmount;
-        private double servicesAmount;
-        private double totalAmount;
-        private long rentalHours;
-        private long rentalDays;
     }
 }

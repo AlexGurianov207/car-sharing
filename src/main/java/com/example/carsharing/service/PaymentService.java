@@ -42,19 +42,11 @@ public class PaymentService {
             throw new DataIntegrityViolationException("Payment already exists for rental: " + request.getRentalId());
         }
 
-        Rental.PriceDetails priceDetails = rental.getPriceDetails();
-        if (priceDetails == null) {
-            throw new IllegalStateException("Cannot calculate price for rental: " + request.getRentalId());
-        }
-
         if (request.getTransactionId() == null || request.getTransactionId().isEmpty()) {
             request.setTransactionId("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         }
 
         Payment payment = paymentMapper.toEntity(request, rental);
-        payment.setAmount(priceDetails.getTotalAmount());
-        payment.setCarAmount(priceDetails.getCarAmount());
-        payment.setServicesAmount(priceDetails.getServicesAmount());
 
         Payment savedPayment = paymentRepository.save(payment);
         return paymentMapper.toResponse(savedPayment);

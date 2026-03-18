@@ -8,6 +8,9 @@ import com.example.carsharing.model.User;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -24,47 +27,45 @@ public class RentalMapper {
     public RentalResponse toResponse(Rental rental) {
         RentalResponse response = new RentalResponse();
         response.setId(rental.getId());
-        response.setUserId(rental.getUser().getId());
-        response.setUserFullName(rental.getUser().getFirstName() + " " + rental.getUser().getLastName());
-        response.setCarId(rental.getCar().getId());
-        response.setCarInfo(rental.getCar().getBrand() + " " +
-                rental.getCar().getModel() + " (" +
-                rental.getCar().getLicensePlate() + ")");
+
+        if (rental.getUser() != null) {
+            response.setUserId(rental.getUser().getId());
+            response.setUserFullName(rental.getUser().getFirstName() + " " +
+                    rental.getUser().getLastName());
+        } else {
+            response.setUserId(null);
+            response.setUserFullName(rental.getUserFullName());
+        }
+
+        if (rental.getCar() != null) {
+            response.setCarId(rental.getCar().getId());
+            response.setCarInfo(rental.getCar().getBrand() + " " +
+                    rental.getCar().getModel() + " (" +
+                    rental.getCar().getLicensePlate() + ")");
+        } else {
+            response.setCarId(null);
+            response.setCarInfo(rental.getCarInfo());
+        }
+
         response.setStartTime(rental.getStartTime());
         response.setEndTime(rental.getEndTime());
         response.setStatus(rental.getStatus().name());
-        response.setCreatedAt(rental.getCreatedAt());
 
-        if (rental.getSelectedServices() != null) {
-            response.setSelectedServices(
-                    rental.getSelectedServices().stream()
-                            .map(this::mapService)
-                            .collect(Collectors.toList())
-            );
+        List<String> serviceNameList = new ArrayList<>();
+
+        if (rental.getSelectedServices() != null && !rental.getSelectedServices().isEmpty()) {
+            serviceNameList = rental.getSelectedServices().stream()
+                    .map(ExtraService::getName)
+                    .collect(Collectors.toList());
+        } else if (rental.getServiceNames() != null && !rental.getServiceNames().isEmpty()) {
+            String[] names = rental.getServiceNames().split(",");
+            serviceNameList = Arrays.stream(names)
+                    .map(String::trim)
+                    .collect(Collectors.toList());
         }
 
-        if (rental.getEndTime() != null) {
-            Rental.PriceDetails priceDetails = rental.getPriceDetails();
-            if (priceDetails != null) {
-                RentalResponse.PriceDetails details = new RentalResponse.PriceDetails();
-                details.setCarAmount(priceDetails.getCarAmount());
-                details.setServicesAmount(priceDetails.getServicesAmount());
-                details.setTotalAmount(priceDetails.getTotalAmount());
-                details.setRentalHours(priceDetails.getRentalHours());
-                details.setRentalDays(priceDetails.getRentalDays());
-                response.setPriceDetails(details);
-            }
-        }
+        response.setSelectedServices(serviceNameList);
 
         return response;
-    }
-
-    private RentalResponse.ServiceInfo mapService(ExtraService service) {
-        RentalResponse.ServiceInfo info = new RentalResponse.ServiceInfo();
-        info.setId(service.getId());
-        info.setName(service.getName());
-        info.setPricePerDay(service.getPricePerDay());
-        info.setCategory(service.getCategory().name());
-        return info;
     }
 }
