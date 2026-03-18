@@ -172,3 +172,19 @@
    // Решение: один запрос с JOIN через EntityGraph
    @EntityGraph(attributePaths = {"user", "car", "selectedServices"})
    List<Rental> findAll();  // 1 запрос
+
+# 1. Клонируйте репозиторий
+git clone https://github.com/AlexGurianov207/car-sharing.git
+
+# 2. Перейдите в директорию проекта
+cd car-sharing
+
+# 3. Настройте параметры подключения к БД
+export DB_USERNAME=postgres
+export DB_PASSWORD=your_password
+
+# 4. Соберите проект
+./mvnw clean package
+
+# 5. Запустите приложение
+java -jar target/Carsharing-0.0.1-SNAPSHOT.jar
