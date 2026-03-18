@@ -2,12 +2,14 @@
 
 # 🚗 CAR SHARING API
 
-### REST API сервис для управления автопарком каршеринга
+### REST API сервис для управления каршерингом
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=24&duration=3000&pause=500&color=2F81F7&center=true&vCenter=true&width=435&lines=Java+17;Spring+Boot+4.0;REST+API;Checkstyle+%26+SonarCloud" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=24&duration=3000&pause=500&color=2F81F7&center=true&vCenter=true&width=535&lines=Java+17;Spring+Boot+4.0;PostgreSQL+%7C+JPA+Hibernate;REST+API;Checkstyle+%26+SonarCloud;N%2B1+Problem+%7C+Transactions" alt="Typing SVG" />
 
 [![Java](https://img.shields.io/badge/Java-17-%23ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0-%236DB33F?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-%23316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Hibernate](https://img.shields.io/badge/Hibernate-6.4-%2359666C?style=for-the-badge&logo=hibernate&logoColor=white)](https://hibernate.org/)
 [![SonarCloud](https://img.shields.io/badge/SonarCloud-Quality%20Gate-%23F3702A?style=for-the-badge&logo=sonarcloud&logoColor=white)](https://sonarcloud.io/summary/overall?id=AlexGurianov207_car-sharing&branch=main)
 
 </div>
@@ -18,20 +20,30 @@
 
 - [📖 О проекте](#-о-проекте)
 - [✨ Функциональность](#-функциональность)
+- [📊 Модель данных и ER-диаграмма](#-модель-данных-и-er-диаграмма)
 - [🛠️ Технологический стек](#️-технологический-стек)
+- [🔍 Ключевые особенности реализации](#-ключевые-особенности-реализации)
+- [📈 Производительность и оптимизация](#-производительность-и-оптимизация)
 - [🔗 SonarCloud анализ](#-sonarcloud-анализ)
 - [🚀 Запуск проекта](#-запуск-проекта)
-- [📬 Примеры запросов](#-примеры-запросов)
 
 ---
 
 ## 📖 О ПРОЕКТЕ
 
-Данный проект представляет собой REST API сервис для управления автопарком каршеринга. Разработан в рамках лабораторной работы по дисциплине *"Программирование на языках высокого уровня"*.
+Данный проект представляет собой **полноценное REST API** для управления автопарком каршеринга, разработанное в рамках лабораторных работ по дисциплине *"Программирование на языках высокого уровня"*.
 
-**Цель работы:** Создание Spring Boot приложения с классической многослойной архитектурой (Controller → Service → Repository), реализация REST endpoints для управления автомобилями, настройка статического анализатора кода Checkstyle и интеграция с SonarCloud для непрерывной оценки качества кода.
+**Архитектура:** Классическая многослойная (Controller → Service → Repository) с подключением реляционной базы данных PostgreSQL и использованием JPA/Hibernate для объектно-реляционного отображения.
 
-API позволяет добавлять новые автомобили в автопарк, получать полный список доступных машин, искать по марке автомобиля (`brand`) и просматривать детали конкретного автомобиля. Проект сделан с акцентом на чистоту кода, следование стандартам Java Code Conventions и документирование API.
+### 🎯 Что реализовано:
+
+- ✅ Подключение и настройка PostgreSQL
+- ✅ 6 связанных сущностей с отношениями `@OneToMany`, `@ManyToMany`, `@OneToOne`
+- ✅ Полный CRUD для всех сущностей
+- ✅ Демонстрация и решение проблемы N+1 через `@EntityGraph`
+- ✅ Работа с транзакциями (`@Transactional`) и демонстрация rollback при ошибках
+- ✅ Каскадные операции (CascadeType.PERSIST) для связанных сущностей
+- ✅ Статический анализ кода через Checkstyle и SonarCloud
 
 ---
 
@@ -39,14 +51,85 @@ API позволяет добавлять новые автомобили в а�
 
 ### 🚘 Управление автомобилями (`/api/cars`)
 
-| Метод   | Endpoint                      | Описание                                              |
-|---------|-------------------------------|-------------------------------------------------------|
-| `GET`   | `/api/cars`                   | Получение списка всех автомобилей                     |
-| `GET`   | `/api/cars?brand={brand}`     | 🔍 **Поиск автомобилей по марке** (регистронезависимо)|
-| `GET`   | `/api/cars/{id}`              | Просмотр детальной информации о конкретном автомобиле |
-| `POST`  | `/api/cars`                   | Добавление нового автомобиля в автопарк               |
+| Метод   | Endpoint                               | Описание                                              |
+|---------|----------------------------------------|-------------------------------------------------------|
+| `GET`   | `/api/cars`                            | Получение списка всех автомобилей (с фильтрацией)     |
+| `GET`   | `/api/cars?status=AVAILABLE`           | Фильтрация по статусу                                 |
+| `GET`   | `/api/cars?brand={brand}&model={model}`| Поиск по марке и модели                               |
+| `GET`   | `/api/cars?maxPrice={price}`           | Поиск автомобилей с ценой до указанной                |
+| `GET`   | `/api/cars/{id}`                       | Детальная информация об автомобиле                    |
+| `GET`   | `/api/cars/by-license/{plate}`         | Поиск по госномеру                                    |
+| `POST`  | `/api/cars`                            | Добавление нового автомобиля                          |
+| `PUT`   | `/api/cars/{id}`                       | Обновление информации об автомобиле                   |
+| `DELETE`| `/api/cars/{id}`                       | Удаление автомобиля (только если не в аренде)         |
 
-**Ключевая функция:** Поиск автомобилей по марке (`brand`) с фильтрацией по подстроке. Если автомобили по заданному критерию не найдены, API возвращает `404 Not Found`.
+### 👤 Управление пользователями (`/api/users`)
+
+| Метод   | Endpoint                    | Описание                              |
+|---------|-----------------------------|---------------------------------------|
+| `GET`   | `/api/users`                | Список всех пользователей             |
+| `GET`   | `/api/users/{id}`           | Информация о пользователе             |
+| `GET`   | `/api/users/by-email?email=`| Поиск по email                        |
+| `POST`  | `/api/users`                | Регистрация нового пользователя       |
+| `PUT`   | `/api/users/{id}`           | Обновление данных пользователя        |
+| `PATCH` | `/api/users/{id}/status`    | Изменение статуса (ACTIVE/BLOCKED)    |
+| `DELETE`| `/api/users/{id}`           | Удаление пользователя                  |
+
+### 📅 Управление арендой (`/api/rentals`)
+
+| Метод   | Endpoint                       | Описание                                    |
+|---------|--------------------------------|---------------------------------------------|
+| `GET`   | `/api/rentals/active`          | Все активные аренды                         |
+| `GET`   | `/api/rentals/user/{userId}`   | Аренды пользователя                          |
+| `GET`   | `/api/rentals/car/{carId}`     | История аренд автомобиля                     |
+| `GET`   | `/api/rentals/{id}`            | Детали аренды                                |
+| `POST`  | `/api/rentals`                 | Начать аренду                                |
+| `PATCH` | `/api/rentals/{id}/complete`   | Завершить аренду (авто создание платежа)     |
+| `DELETE`| `/api/rentals/{id}`            | Удалить аренду (только завершенную)          |
+
+### 💳 Платежи (`/api/payments`)
+
+| Метод   | Endpoint                 | Описание                      |
+|---------|--------------------------|-------------------------------|
+| `GET`   | `/api/payments`          | Все платежи                   |
+| `GET`   | `/api/payments/{id}`     | Детали платежа                |
+| `POST`  | `/api/payments`          | Создать платеж (для аренды)   |
+| `PATCH` | `/api/payments/{id}/refund` | Возврат платежа             |
+| `DELETE`| `/api/payments/{id}`     | Удалить платеж                 |
+
+### 🛠️ Дополнительные услуги (`/api/services`)
+
+| Метод   | Endpoint                          | Описание                          |
+|---------|-----------------------------------|-----------------------------------|
+| `GET`   | `/api/services`                   | Все услуги (с фильтрацией)        |
+| `GET`   | `/api/services?category=SAFETY`   | Фильтр по категории               |
+| `GET`   | `/api/services?onlyActive=true`   | Только активные услуги            |
+| `POST`  | `/api/services`                   | Создать услугу                    |
+| `PATCH` | `/api/services/{id}/status`       | Активировать/деактивировать услугу |
+
+### 🧪 Демонстрационные endpoints (для лабораторной)
+
+| Метод   | Endpoint                          | Описание                                      |
+|---------|-----------------------------------|-----------------------------------------------|
+| `GET`   | `/api/rentals/demo/n-plus-one`    | Демонстрация проблемы N+1                     |
+| `GET`   | `/api/rentals/demo/solution`      | Решение N+1 через `@EntityGraph`              |
+| `POST`  | `/api/rentals/demo/without-tx`    | Создание аренды БЕЗ транзакции (с частичным сохранением при ошибке) |
+| `POST`  | `/api/rentals/demo/with-tx`       | Создание аренды С транзакцией (полный rollback при ошибке) |
+
+---
+
+## 📊 МОДЕЛЬ ДАННЫХ И ER-ДИАГРАММА
+
+### Сущности (6)
+
+| Сущность        | Описание                              | Связи                                      |
+|-----------------|---------------------------------------|--------------------------------------------|
+| **User**        | Пользователь сервиса                  | `@OneToMany` → Rental                      |
+| **Car**         | Автомобиль в автопарке                | `@OneToMany` → Rental, `@ManyToMany` → ExtraService |
+| **Rental**      | Аренда автомобиля                     | `@ManyToOne` → User, Car; `@ManyToMany` → ExtraService; `@OneToOne` → Payment |
+| **ExtraService**| Дополнительная услуга (страховка, детское кресло и т.д.) | `@ManyToMany` → Car, Rental |
+| **Payment**     | Платеж за аренду                      | `@OneToOne` → Rental                       |
+
 
 ---
 
@@ -54,61 +137,54 @@ API позволяет добавлять новые автомобили в а�
 
 <div align="center">
 
-| Категория           | Технологии                                                                                                                                                                                                     |
-|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Язык**            | ![Java](https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=openjdk&logoColor=white)                                                                                                            |
-| **Фреймворк**       | ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0-6DB33F?style=flat-square&logo=spring&logoColor=white)                                                                                            |
-| **Сборка**          | ![Maven](https://img.shields.io/badge/Maven-3.9-C71A36?style=flat-square&logo=apache-maven&logoColor=white)                                                                                                    |
-| **Архитектура**     | REST API, Controller-Service-Repository                                                                                                                                                                        |
-| **Хранение данных** | In-memory коллекции (ConcurrentHashMap)                                                                                                                                                                        |
-| **Утилиты**         | ![Lombok](https://img.shields.io/badge/Lombok-2022-ff69b4?style=flat-square)                                                                                                                                   |
-| **Качество кода**   | ![Checkstyle](https://img.shields.io/badge/Checkstyle-10.12-00BFFF?style=flat-square) ![SonarCloud](https://img.shields.io/badge/SonarCloud-Analysis-F3702A?style=flat-square&logo=sonarcloud&logoColor=white) |
+| Категория           | Технологии                                                                                                                                                                                                                                                                                     |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Язык**            | ![Java](https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=openjdk&logoColor=white)                                                                                                                                                                                            |
+| **Фреймворк**       | ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0-6DB33F?style=flat-square&logo=spring&logoColor=white) ![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-6DB33F?style=flat-square&logo=spring&logoColor=white)                                                |
+| **База данных**     | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-316192?style=flat-square&logo=postgresql&logoColor=white) ![Hibernate](https://img.shields.io/badge/Hibernate-6.4-59666C?style=flat-square&logo=hibernate&logoColor=white)                                                          |
+| **Сборка**          | ![Maven](https://img.shields.io/badge/Maven-3.9-C71A36?style=flat-square&logo=apache-maven&logoColor=white)                                                                                                                                                                                    |
+| **Архитектура**     | REST API, Controller-Service-Repository, DTO Pattern, Mapper Layer                                                                                                                                                                                                                             |
+| **Утилиты**         | ![Lombok](https://img.shields.io/badge/Lombok-2022-ff69b4?style=flat-square)                                                                                                                                                                                                                   |
+| **Качество кода**   | ![Checkstyle](https://img.shields.io/badge/Checkstyle-10.12-00BFFF?style=flat-square) ![SonarCloud](https://img.shields.io/badge/SonarCloud-Analysis-F3702A?style=flat-square&logo=sonarcloud&logoColor=white)                                                                                 |
 
-</div>
-
-- **Архитектура:** Многослойная (Controller, Service, Repository)
-- **Модель данных:** Автомобиль (`Car`) с полями: id, brand, model, licensePlate (госномер), year, pricePerHour, status
-- **Обработка данных:** Хранение в памяти с использованием потокобезопасных коллекций (`ConcurrentHashMap`)
-- **Качество кода:**
-   - **Checkstyle:** Настроен на проверку стиля кода по правилам (длина строки 120, отступы 4 пробела, именование и т.д.) — файл `checkstyle.xml`
-   - **SonarCloud:** Непрерывный анализ кода на наличие багов, уязвимостей и технического долга
-
----
-
-## 🔗 SONARCLOUD АНАЛИЗ
-
-<div align="center">
-  <a href="https://sonarcloud.io/summary/overall?id=AlexGurianov207_car-sharing&branch=main">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=AlexGurianov207_car-sharing&metric=alert_status" alt="Quality Gate Status">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=AlexGurianov207_car-sharing&metric=bugs" alt="Bugs">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=AlexGurianov207_car-sharing&metric=code_smells" alt="Code Smells">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=AlexGurianov207_car-sharing&metric=coverage" alt="Coverage">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=AlexGurianov207_car-sharing&metric=duplicated_lines_density" alt="Duplicated Lines">
-  </a>
-
-👉 [Перейти к полному анализу на SonarCloud](https://sonarcloud.io/summary/overall?id=AlexGurianov207_car-sharing&branch=main)
 </div>
 
 ---
 
-## 🚀 ЗАПУСК ПРОЕКТА
+## 🔍 КЛЮЧЕВЫЕ ОСОБЕННОСТИ РЕАЛИЗАЦИИ
 
-### Предварительные требования
+### 1. **Работа с каскадами (CascadeType)**
+   - Использован `CascadeType.PERSIST` для связи `Rental → Payment`
+   - Это гарантирует, что при завершении аренды платеж создается автоматически
+   - Отсутствие `CascadeType.REMOVE` защищает от случайного удаления платежей
 
-- JDK 17 или выше
-- Maven 3.6+ (или используйте встроенный Maven Wrapper)
+### 2. **Оптимизация загрузки данных (FetchType)**
+   - Все `@ManyToOne` и `@OneToOne` связи настроены на `FetchType.LAZY`
+   - Это предотвращает загрузку ненужных данных и повышает производительность
+   - Для конкретных запросов используется `@EntityGraph` для eager-загрузки
 
-### Установка и запуск
+### 3. **Демонстрация N+1 проблемы и её решение**
+   ```java
+   // Проблема: для каждого rental выполняется отдельный запрос
+   @Query("SELECT r FROM Rental r")
+   List<Rental> findAllSlow();  // N+1 запросов
+   
+   // Решение: один запрос с JOIN через EntityGraph
+   @EntityGraph(attributePaths = {"user", "car", "selectedServices"})
+   List<Rental> findAll();  // 1 запрос
 
-```bash
 # 1. Клонируйте репозиторий
 git clone https://github.com/AlexGurianov207/car-sharing.git
 
 # 2. Перейдите в директорию проекта
 cd car-sharing
 
-# 3. Соберите проект с помощью Maven Wrapper
+# 3. Настройте параметры подключения к БД
+export DB_USERNAME=postgres
+export DB_PASSWORD=your_password
+
+# 4. Соберите проект
 ./mvnw clean package
 
-# 4. Запустите приложение
+# 5. Запустите приложение
 java -jar target/Carsharing-0.0.1-SNAPSHOT.jar
