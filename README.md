@@ -130,7 +130,6 @@
 | **ExtraService**| Дополнительная услуга (страховка, детское кресло и т.д.) | `@ManyToMany` → Car, Rental |
 | **Payment**     | Платеж за аренду                      | `@OneToOne` → Rental                       |
 
-
 ---
 
 ## 🛠️ ТЕХНОЛОГИЧЕСКИЙ СТЕК
@@ -172,6 +171,31 @@
    // Решение: один запрос с JOIN через EntityGraph
    @EntityGraph(attributePaths = {"user", "car", "selectedServices"})
    List<Rental> findAll();  // 1 запрос
+```
+
+### 4. **Транзакционность**
+```java
+// Без @Transactional - частичное сохранение при ошибке
+public RentalResponse createRentalWithoutTransaction(...) {
+    rentalRepository.save(rental);  // Сохранится даже при ошибке ниже
+}
+
+// С @Transactional - полный rollback при ошибке
+@Transactional
+public RentalResponse createRentalWithTransaction(...) {
+    rentalRepository.save(rental);  // Откатится при ошибке
+}
+```
+### 5. **Снэпшоты (исторические данные) в Payment**
+При создании платежа сохраняются "снэпшоты" данных на момент оплаты
+
+Это гарантирует неизменность исторических данных
+
+Реализовано через @PrePersist в сущности Payment
+
+## УСТАНОВКА И ЗАПУСК
+
+```java
 
 # 1. Клонируйте репозиторий
 git clone https://github.com/AlexGurianov207/car-sharing.git
@@ -188,3 +212,17 @@ export DB_PASSWORD=your_password
 
 # 5. Запустите приложение
 java -jar target/Carsharing-0.0.1-SNAPSHOT.jar
+
+
+Конфигурация:
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/car_sharing
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+```
