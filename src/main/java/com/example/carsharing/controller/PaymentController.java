@@ -35,12 +35,6 @@ public class PaymentController {
         return paymentService.getPaymentById(id);
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public PaymentResponse createPayment(@Valid @RequestBody PaymentCreateRequest request) {
-        return paymentService.createPayment(request);
-    }
-
     @PatchMapping("/{id}/refund")
     public PaymentResponse refundPayment(@PathVariable Long id) {
         return paymentService.refundPayment(id);

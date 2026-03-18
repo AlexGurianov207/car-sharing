@@ -7,18 +7,10 @@ import java.time.LocalDateTime;
 public class PaymentResponse {
     private Long id;
     private Long rentalId;
-    private String userFullName;
     private Double amount;
     private Double carAmount;
     private Double servicesAmount;
     private LocalDateTime paymentDate;
-    private String paymentMethod;
     private String status;
     private String transactionId;
-    private String selectedServices;
-
-    private String carInfo;
-    private LocalDateTime rentalStartTime;
-    private LocalDateTime rentalEndTime;
-    private Long rentalHours;
 }

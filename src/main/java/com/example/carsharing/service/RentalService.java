@@ -6,7 +6,6 @@ import com.example.carsharing.model.Car;
 import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.model.Payment;
-import com.example.carsharing.model.PaymentMethod;
 import com.example.carsharing.model.PaymentStatus;
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.RentalStatus;
@@ -145,9 +144,7 @@ public class RentalService {
         payment.setAmount(carPrice + servicesPrice);
         payment.setCarAmount(carPrice);
         payment.setServicesAmount(servicesPrice);
-        payment.setRentalHours(hours);
-        payment.setRentalDays(days);
-        payment.setPaymentMethod(PaymentMethod.CARD);
+
         payment.setStatus(PaymentStatus.COMPLETED);
         payment.setTransactionId("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 

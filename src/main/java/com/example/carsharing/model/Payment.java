@@ -41,22 +41,12 @@ public class Payment {
     @Column(name = "payment_date", nullable = false)
     private LocalDateTime paymentDate;
 
-    @Column(name = "payment_method", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private PaymentMethod paymentMethod;
-
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
     @Column(name = "transaction_id", unique = true, length = 100)
     private String transactionId;
-
-    @Column(name = "rental_hours")
-    private Long rentalHours;
-
-    @Column(name = "rental_days")
-    private Long rentalDays;
 
     @PrePersist
     protected void onCreate() {

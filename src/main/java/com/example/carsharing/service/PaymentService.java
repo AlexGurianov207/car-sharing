@@ -14,6 +14,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -47,6 +49,22 @@ public class PaymentService {
         }
 
         Payment payment = paymentMapper.toEntity(request, rental);
+
+        long hours = Duration.between(rental.getStartTime(), rental.getEndTime()).toHours();
+        if (hours < 1) hours = 1;
+        long days = hours / 24 + (hours % 24 == 0 ? 0 : 1);
+
+        double carPrice = rental.getCar().getPricePerHour() * hours;
+        double servicesPrice = 0.0;
+        if (rental.getSelectedServices() != null) {
+            servicesPrice = rental.getSelectedServices().stream()
+                    .mapToDouble(s -> s.getPricePerDay() * days)
+                    .sum();
+        }
+
+        payment.setCarAmount(carPrice);
+        payment.setServicesAmount(servicesPrice);
+        payment.setAmount(carPrice + servicesPrice);
 
         Payment savedPayment = paymentRepository.save(payment);
         return paymentMapper.toResponse(savedPayment);
