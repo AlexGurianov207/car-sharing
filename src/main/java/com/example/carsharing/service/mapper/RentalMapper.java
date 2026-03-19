@@ -61,7 +61,7 @@ public class RentalMapper {
             String[] names = rental.getServiceNames().split(",");
             serviceNameList = Arrays.stream(names)
                     .map(String::trim)
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         response.setSelectedServices(serviceNameList);

@@ -51,7 +51,9 @@ public class PaymentService {
         Payment payment = paymentMapper.toEntity(request, rental);
 
         long hours = Duration.between(rental.getStartTime(), rental.getEndTime()).toHours();
-        if (hours < 1) hours = 1;
+        if (hours < 1) {
+            hours = 1;
+        }
         long days = hours / 24 + (hours % 24 == 0 ? 0 : 1);
 
         double carPrice = rental.getCar().getPricePerHour() * hours;
