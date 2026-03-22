@@ -4,6 +4,7 @@ import com.example.carsharing.dto.RentalResponse;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.model.Rental;
+import com.example.carsharing.model.RentalStatus;
 import com.example.carsharing.model.User;
 import org.springframework.stereotype.Component;
 
@@ -27,8 +28,12 @@ public class RentalMapper {
     public RentalResponse toResponse(Rental rental) {
         RentalResponse response = new RentalResponse();
         response.setId(rental.getId());
+        boolean useSnapshot = rental.getStatus() == RentalStatus.COMPLETED;
 
-        if (rental.getUser() != null) {
+        if (useSnapshot && rental.getUserFullName() != null && !rental.getUserFullName().isBlank()) {
+            response.setUserId(rental.getUser() != null ? rental.getUser().getId() : null);
+            response.setUserFullName(rental.getUserFullName());
+        } else if (rental.getUser() != null) {
             response.setUserId(rental.getUser().getId());
             response.setUserFullName(rental.getUser().getFirstName() + " " +
                     rental.getUser().getLastName());
@@ -37,7 +42,10 @@ public class RentalMapper {
             response.setUserFullName(rental.getUserFullName());
         }
 
-        if (rental.getCar() != null) {
+        if (useSnapshot && rental.getCarInfo() != null && !rental.getCarInfo().isBlank()) {
+            response.setCarId(rental.getCar() != null ? rental.getCar().getId() : null);
+            response.setCarInfo(rental.getCarInfo());
+        } else if (rental.getCar() != null) {
             response.setCarId(rental.getCar().getId());
             response.setCarInfo(rental.getCar().getBrand() + " " +
                     rental.getCar().getModel() + " (" +
@@ -53,7 +61,13 @@ public class RentalMapper {
 
         List<String> serviceNameList = new ArrayList<>();
 
-        if (rental.getSelectedServices() != null && !rental.getSelectedServices().isEmpty()) {
+        if (useSnapshot && rental.getServiceNames() != null && !rental.getServiceNames().isEmpty()) {
+            String[] names = rental.getServiceNames().split("[;,]");
+            serviceNameList = Arrays.stream(names)
+                    .map(String::trim)
+                    .filter(name -> !name.isEmpty())
+                    .toList();
+        } else if (rental.getSelectedServices() != null && !rental.getSelectedServices().isEmpty()) {
             serviceNameList = rental.getSelectedServices().stream()
                     .map(ExtraService::getName)
                     .collect(Collectors.toList());

@@ -5,7 +5,6 @@ import com.example.carsharing.dto.CarResponse;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.model.ExtraService;
-import com.example.carsharing.model.Rental;
 import com.example.carsharing.repository.CarRepository;
 import com.example.carsharing.repository.ExtraServiceRepository;
 import com.example.carsharing.repository.RentalRepository;
@@ -95,14 +94,11 @@ public class CarService {
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
 
-        checkNotRented(id, car);
-
-        List<Rental> userRentals = rentalRepository.findByUserId(id);
-        if (!userRentals.isEmpty()) {
-            throw new InvalidDataAccessApiUsageException(
-                    "Cannot update user with rental history. User has " +
-                            userRentals.size() + " past rentals.");
+        if (car.getStatus() == CarStatus.DELETED) {
+            throw new InvalidDataAccessApiUsageException("Cannot update deleted car");
         }
+
+        checkNotRented(id, car);
 
         if (!car.getLicensePlate().equals(request.getLicensePlate()) &&
                 carRepository.existsByLicensePlate(request.getLicensePlate())) {
@@ -124,9 +120,19 @@ public class CarService {
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Car not found"));
 
+        if (car.getStatus() == CarStatus.DELETED) {
+            return;
+        }
+
         if (car.getStatus() == CarStatus.RENTED) {
             throw new InvalidDataAccessApiUsageException(
                     "Cannot delete rented car");
+        }
+
+        if (rentalRepository.existsByCarId(id)) {
+            car.setStatus(CarStatus.DELETED);
+            carRepository.save(car);
+            return;
         }
 
         carRepository.deleteById(id);
@@ -135,6 +141,10 @@ public class CarService {
     public CarResponse updateAvailableServices(Long carId, List<Long> serviceIds) {
         Car car = carRepository.findById(carId)
                 .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + carId));
+
+        if (car.getStatus() == CarStatus.DELETED) {
+            throw new InvalidDataAccessApiUsageException("Cannot update deleted car");
+        }
 
         checkNotRented(carId, car);
 

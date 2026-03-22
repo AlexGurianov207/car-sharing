@@ -2,7 +2,6 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
-import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.User;
 import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.repository.RentalRepository;
@@ -64,11 +63,8 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
 
-        List<Rental> userRentals = rentalRepository.findByUserId(id);
-        if (!userRentals.isEmpty()) {
-            throw new InvalidDataAccessApiUsageException(
-                    "Cannot update user with rental history. User has " +
-                            userRentals.size() + " past rentals.");
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new InvalidDataAccessApiUsageException("Cannot update deleted user");
         }
 
         user.setFirstName(request.getFirstName());
@@ -89,6 +85,10 @@ public class UserService {
             throw new IllegalArgumentException("Status can only be changed to ACTIVE or BLOCKED");
         }
 
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new InvalidDataAccessApiUsageException("Cannot change status of deleted user");
+        }
+
         if (newStatus == UserStatus.BLOCKED && rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
             throw new InvalidDataAccessApiUsageException(
                     "Cannot block user with active rental");
@@ -103,11 +103,21 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException(USER_NOT_FOUND_MESSAGE + id));
 
+        if (user.getStatus() == UserStatus.DELETED) {
+            return;
+        }
+
         boolean hasActiveRentals = rentalRepository.existsByUserIdAndEndTimeIsNull(id);
 
         if (hasActiveRentals) {
             throw new InvalidDataAccessApiUsageException(
                     "Cannot delete user with active rentals. Complete or cancel rentals first.");
+        }
+
+        if (rentalRepository.existsByUserId(id)) {
+            user.setStatus(UserStatus.DELETED);
+            userRepository.save(user);
+            return;
         }
 
         userRepository.delete(user);

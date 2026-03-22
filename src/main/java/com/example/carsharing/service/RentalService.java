@@ -148,17 +148,12 @@ public class RentalService {
         payment.setStatus(PaymentStatus.COMPLETED);
         payment.setTransactionId("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
-        rental.setUser(null);
-        rental.setCar(null);
-        rental.setSelectedServices(null);
-
         rental.setStatus(RentalStatus.COMPLETED);
 
         car.setStatus(CarStatus.AVAILABLE);
         carRepository.save(car);
 
         rental.setPayment(payment);
-        paymentRepository.save(payment);
         Rental updatedRental = rentalRepository.save(rental);
 
         return rentalMapper.toResponse(updatedRental);

@@ -20,6 +20,10 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
 
     boolean existsByUserIdAndEndTimeIsNull(Long userId);
 
+    boolean existsByUserId(Long userId);
+
+    boolean existsByCarId(Long carId);
+
     @Query("SELECT r FROM Rental r")
     List<Rental> findAllSlow();
 
