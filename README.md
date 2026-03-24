@@ -132,6 +132,63 @@
 
 ---
 
+Дополнительные endpoints:
+- GET /api/rentals/search/jpql
+- GET /api/rentals/search/native
+- GET /api/rentals/search/paged
+
+Демо endpoints:
+- GET /api/rentals/demo/n-plus-one
+- GET /api/rentals/demo/solution
+- POST /api/rentals/demo/without-tx
+- POST /api/rentals/demo/with-tx
+
+## Поиск и фильтрация аренд
+Реализованы два варианта сложного поиска с фильтрацией по вложенным сущностям (rental -> car, rental -> user):
+
+1. JPQL-запрос (/api/rentals/search/jpql)
+2. Native SQL-запрос (/api/rentals/search/native)
+
+Параметры фильтрации:
+- carBrand (опционально)
+- userId (опционально)
+- status (опционально)
+
+## Пагинация
+Пагинация вынесена в отдельный endpoint:
+- GET /api/rentals/search/paged
+
+Поддерживаются стандартные параметры Spring Pageable:
+- page
+- size
+- sort (например, sort=startTime,desc)
+
+## Кэш запросов (in-memory HashMap)
+В сервисе аренд используется индекс ранее выполненных запросов:
+- Map<RentalSearchCacheKey, Page<RentalResponse>>
+
+Ключ кэша составной и включает:
+- фильтры (carBrand, userId, status)
+- параметры страницы (page, size, sort)
+- тип запроса (JPQL/NATIVE)
+
+Для ключа используется record, поэтому equals()/hashCode() корректны по всем полям.
+
+Для записи в кэш используется отдельный метод putToIndex(...) с логикой PUT/UPDATE.
+
+## Инвалидация кэша
+Кэш очищается при изменении данных, влияющих на поиск:
+- в RentalService после create/complete/delete
+- в CarService после изменений автомобилей
+
+## Логи кэша
+В консоли доступны диагностические сообщения:
+- [CACHE] MISS — ключ не найден, идём в БД
+- [CACHE] PUT — добавили новое значение
+- [CACHE] UPDATE — перезаписали существующий ключ
+- [CACHE] HIT — ответ взят из кэша
+- [CACHE] INVALIDATE — кэш очищен после изменений
+
 ## 🛠️ ТЕХНОЛОГИЧЕСКИЙ СТЕК
 
 <div align="center">
