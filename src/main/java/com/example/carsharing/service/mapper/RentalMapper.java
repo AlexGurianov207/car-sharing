@@ -29,57 +29,80 @@ public class RentalMapper {
         RentalResponse response = new RentalResponse();
         response.setId(rental.getId());
         boolean useSnapshot = rental.getStatus() == RentalStatus.COMPLETED;
-
-        if (useSnapshot && rental.getUserFullName() != null && !rental.getUserFullName().isBlank()) {
-            response.setUserId(rental.getUser() != null ? rental.getUser().getId() : null);
-            response.setUserFullName(rental.getUserFullName());
-        } else if (rental.getUser() != null) {
-            response.setUserId(rental.getUser().getId());
-            response.setUserFullName(rental.getUser().getFirstName() + " " +
-                    rental.getUser().getLastName());
-        } else {
-            response.setUserId(null);
-            response.setUserFullName(rental.getUserFullName());
-        }
-
-        if (useSnapshot && rental.getCarInfo() != null && !rental.getCarInfo().isBlank()) {
-            response.setCarId(rental.getCar() != null ? rental.getCar().getId() : null);
-            response.setCarInfo(rental.getCarInfo());
-        } else if (rental.getCar() != null) {
-            response.setCarId(rental.getCar().getId());
-            response.setCarInfo(rental.getCar().getBrand() + " " +
-                    rental.getCar().getModel() + " (" +
-                    rental.getCar().getLicensePlate() + ")");
-        } else {
-            response.setCarId(null);
-            response.setCarInfo(rental.getCarInfo());
-        }
+        applyUserData(response, rental, useSnapshot);
+        applyCarData(response, rental, useSnapshot);
 
         response.setStartTime(rental.getStartTime());
         response.setEndTime(rental.getEndTime());
         response.setStatus(rental.getStatus().name());
-
-        List<String> serviceNameList = new ArrayList<>();
-
-        if (useSnapshot && rental.getServiceNames() != null && !rental.getServiceNames().isEmpty()) {
-            String[] names = rental.getServiceNames().split("[;,]");
-            serviceNameList = Arrays.stream(names)
-                    .map(String::trim)
-                    .filter(name -> !name.isEmpty())
-                    .toList();
-        } else if (rental.getSelectedServices() != null && !rental.getSelectedServices().isEmpty()) {
-            serviceNameList = rental.getSelectedServices().stream()
-                    .map(ExtraService::getName)
-                    .collect(Collectors.toList());
-        } else if (rental.getServiceNames() != null && !rental.getServiceNames().isEmpty()) {
-            String[] names = rental.getServiceNames().split(",");
-            serviceNameList = Arrays.stream(names)
-                    .map(String::trim)
-                    .toList();
-        }
-
-        response.setSelectedServices(serviceNameList);
+        response.setSelectedServices(resolveServiceNames(rental, useSnapshot));
 
         return response;
+    }
+
+    private void applyUserData(RentalResponse response, Rental rental, boolean useSnapshot) {
+        if (useSnapshot && hasText(rental.getUserFullName())) {
+            response.setUserId(rental.getUser() != null ? rental.getUser().getId() : null);
+            response.setUserFullName(rental.getUserFullName());
+            return;
+        }
+
+        if (rental.getUser() != null) {
+            response.setUserId(rental.getUser().getId());
+            response.setUserFullName(rental.getUser().getFirstName() + " "
+                    + rental.getUser().getLastName());
+            return;
+        }
+
+        response.setUserId(null);
+        response.setUserFullName(rental.getUserFullName());
+    }
+
+    private void applyCarData(RentalResponse response, Rental rental, boolean useSnapshot) {
+        if (useSnapshot && hasText(rental.getCarInfo())) {
+            response.setCarId(rental.getCar() != null ? rental.getCar().getId() : null);
+            response.setCarInfo(rental.getCarInfo());
+            return;
+        }
+
+        if (rental.getCar() != null) {
+            response.setCarId(rental.getCar().getId());
+            response.setCarInfo(rental.getCar().getBrand() + " "
+                    + rental.getCar().getModel() + " ("
+                    + rental.getCar().getLicensePlate() + ")");
+            return;
+        }
+
+        response.setCarId(null);
+        response.setCarInfo(rental.getCarInfo());
+    }
+
+    private List<String> resolveServiceNames(Rental rental, boolean useSnapshot) {
+        if (useSnapshot && hasText(rental.getServiceNames())) {
+            return splitServiceNames(rental.getServiceNames(), "[;,]", true);
+        }
+
+        if (rental.getSelectedServices() != null && !rental.getSelectedServices().isEmpty()) {
+            return rental.getSelectedServices().stream()
+                    .map(ExtraService::getName)
+                    .collect(Collectors.toList());
+        }
+
+        if (hasText(rental.getServiceNames())) {
+            return splitServiceNames(rental.getServiceNames(), ",", false);
+        }
+
+        return new ArrayList<>();
+    }
+
+    private List<String> splitServiceNames(String serviceNames, String delimiter, boolean skipEmptyNames) {
+        return Arrays.stream(serviceNames.split(delimiter))
+                .map(String::trim)
+                .filter(name -> !skipEmptyNames || !name.isEmpty())
+                .toList();
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }
