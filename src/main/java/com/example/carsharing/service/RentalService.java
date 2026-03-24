@@ -19,6 +19,11 @@ import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.RentalMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
@@ -26,9 +31,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -46,6 +57,237 @@ public class RentalService {
     private static final String CAR_NOT_FOUND_MESSAGE = "Car not found";
     private static final String USER_NOT_FOUND_MESSAGE = "User not found";
     private static final String RENTAL_NOT_FOUND_MESSAGE = "Rental not found with id: ";
+    private final Map<RentalSearchCacheKey, Page<RentalResponse>> rentalSearchIndex =
+            Collections.synchronizedMap(new HashMap<>());
+
+    private enum QueryType {
+        JPQL,
+        NATIVE
+    }
+
+    private record RentalSearchCacheKey(
+            String carBrand,
+            Long userId,
+            RentalStatus status,
+            int page,
+            int size,
+            String sort,
+            QueryType queryType
+    ) {
+    }
+
+    @Transactional(readOnly = true)
+    public List<RentalResponse> searchRentalsJpql(
+            String carBrand,
+            Long userId,
+            RentalStatus status
+    ) {
+        return searchRentalsListAsPageInternal(carBrand, userId, status, QueryType.JPQL).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RentalResponse> searchRentalsNative(
+            String carBrand,
+            Long userId,
+            RentalStatus status
+    ) {
+        return searchRentalsListAsPageInternal(carBrand, userId, status, QueryType.NATIVE).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RentalResponse> getRentalsPage(Pageable pageable) {
+        log.info("[PAGE] Request page={}, size={}, sort={}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        Page<Rental> rentalsPage = rentalRepository.findAll(pageable);
+        return mapPageWithDetails(rentalsPage, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RentalResponse> searchRentals(
+            String carBrand,
+            Long userId,
+            RentalStatus status,
+            boolean useNative,
+            Pageable pageable
+    ) {
+        return searchRentalsInternal(
+                carBrand,
+                userId,
+                status,
+                useNative ? QueryType.NATIVE : QueryType.JPQL,
+                pageable
+        );
+    }
+
+    private Page<RentalResponse> searchRentalsListAsPageInternal(
+            String carBrand,
+            Long userId,
+            RentalStatus status,
+            QueryType queryType
+    ) {
+        String normalizedCarBrand = normalize(carBrand);
+        boolean hasUserId = userId != null;
+        boolean hasStatus = status != null;
+        Long safeUserId = hasUserId ? userId : -1L;
+        RentalStatus safeStatus = hasStatus ? status : RentalStatus.ACTIVE;
+        RentalSearchCacheKey key = new RentalSearchCacheKey(
+                normalizedCarBrand,
+                userId,
+                status,
+                0,
+                -1,
+                "LIST[startTime,DESC]",
+                queryType
+        );
+
+        Page<RentalResponse> cachedPage = rentalSearchIndex.get(key);
+        if (cachedPage != null) {
+            log.info("[CACHE] HIT key={}", key);
+            return cachedPage;
+        }
+        log.info("[CACHE] MISS key={}", key);
+
+        List<Rental> rentals = queryType == QueryType.NATIVE
+                ? rentalRepository.searchByFiltersNativeNoPage(
+                        normalizedCarBrand,
+                        hasUserId,
+                        safeUserId,
+                        hasStatus,
+                        safeStatus.name()
+                )
+                : rentalRepository.searchByFiltersJpqlNoPage(
+                        normalizedCarBrand,
+                        hasUserId,
+                        safeUserId,
+                        hasStatus,
+                        safeStatus
+                );
+
+        List<RentalResponse> result = mapListWithDetails(rentals);
+        Page<RentalResponse> resultPage = new PageImpl<>(result);
+        putToIndex(key, resultPage);
+        return resultPage;
+    }
+
+    private Page<RentalResponse> searchRentalsInternal(
+            String carBrand,
+            Long userId,
+            RentalStatus status,
+            QueryType queryType,
+            Pageable pageable
+    ) {
+        String normalizedCarBrand = normalize(carBrand);
+        boolean hasUserId = userId != null;
+        boolean hasStatus = status != null;
+        Long safeUserId = hasUserId ? userId : -1L;
+        RentalStatus safeStatus = hasStatus ? status : RentalStatus.ACTIVE;
+        RentalSearchCacheKey key = new RentalSearchCacheKey(
+                normalizedCarBrand,
+                userId,
+                status,
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSort().toString(),
+                queryType
+        );
+
+        Page<RentalResponse> cachedPage = rentalSearchIndex.get(key);
+        if (cachedPage != null) {
+            log.info("[CACHE] HIT key={}", key);
+            return cachedPage;
+        }
+        log.info("[CACHE] MISS key={}", key);
+
+        Page<Rental> rentalsPage = queryType == QueryType.NATIVE
+                ? rentalRepository.searchByFiltersNative(
+                        normalizedCarBrand,
+                        hasUserId,
+                        safeUserId,
+                        hasStatus,
+                        safeStatus.name(),
+                        toNativePageable(pageable)
+                )
+                : rentalRepository.searchByFiltersJpql(
+                        normalizedCarBrand,
+                        hasUserId,
+                        safeUserId,
+                        hasStatus,
+                        safeStatus,
+                        pageable
+                );
+
+        Page<RentalResponse> resultPage = mapPageWithDetails(rentalsPage, pageable);
+        putToIndex(key, resultPage);
+        return resultPage;
+    }
+
+    private Page<RentalResponse> mapPageWithDetails(Page<Rental> rentalsPage, Pageable pageable) {
+        List<RentalResponse> content = mapListWithDetails(rentalsPage.getContent());
+        return new PageImpl<>(content, pageable, rentalsPage.getTotalElements());
+    }
+
+    private List<RentalResponse> mapListWithDetails(List<Rental> rentals) {
+        if (rentals.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = rentals.stream()
+                .map(Rental::getId)
+                .toList();
+        Map<Long, Rental> rentalsById = rentalRepository.findAllWithDetailsByIdIn(ids).stream()
+                .collect(Collectors.toMap(Rental::getId, Function.identity()));
+
+        return ids.stream()
+                .map(rentalsById::get)
+                .filter(Objects::nonNull)
+                .map(rentalMapper::toResponse)
+                .toList();
+    }
+
+    public void invalidateSearchIndex() {
+        int removedEntries = rentalSearchIndex.size();
+        rentalSearchIndex.clear();
+        log.info("[CACHE] INVALIDATE removedEntries={}", removedEntries);
+    }
+
+    private synchronized Page<RentalResponse> putToIndex(
+            RentalSearchCacheKey key,
+            Page<RentalResponse> value
+    ) {
+        if (rentalSearchIndex.containsKey(key)) {
+            log.info("[CACHE] UPDATE key={}", key);
+        } else {
+            log.info("[CACHE] PUT key={}", key);
+        }
+        Page<RentalResponse> previousValue = rentalSearchIndex.put(key, value);
+        log.info("[CACHE] SIZE={}", rentalSearchIndex.size());
+        return previousValue;
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? "" : trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private Pageable toNativePageable(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        Sort nativeSort = Sort.by(
+                pageable.getSort().stream()
+                        .map(order -> new Sort.Order(order.getDirection(), toSnakeCase(order.getProperty())))
+                        .toList()
+        );
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), nativeSort);
+    }
+
+    private String toSnakeCase(String value) {
+        return value
+                .replaceAll("([a-z])([A-Z]+)", "$1_$2")
+                .toLowerCase();
+    }
 
     @Transactional
     public RentalResponse createRental(RentalCreateRequest request) {
@@ -92,6 +334,7 @@ public class RentalService {
 
         car.setStatus(CarStatus.RENTED);
         carRepository.save(car);
+        invalidateSearchIndex();
 
         return rentalMapper.toResponse(savedRental);
     }
@@ -155,6 +398,7 @@ public class RentalService {
 
         rental.setPayment(payment);
         Rental updatedRental = rentalRepository.save(rental);
+        invalidateSearchIndex();
 
         return rentalMapper.toResponse(updatedRental);
     }
@@ -226,6 +470,7 @@ public class RentalService {
         }
 
         rentalRepository.delete(rental);
+        invalidateSearchIndex();
 
         log.info("Аренда {} и связанный платеж удалены", id);
     }
@@ -297,6 +542,7 @@ public class RentalService {
         }
 
         log.info("Аренда {} успешно создана (НО ЕСЛИ БЫЛА ОШИБКА - ОНА БЫ ОСТАЛАСЬ!)", savedRental.getId());
+        invalidateSearchIndex();
         return rentalMapper.toResponse(savedRental);
     }
 
@@ -345,6 +591,7 @@ public class RentalService {
         }
 
         log.info("Транзакция успешно завершена. Аренда {} сохранена в БД", savedRental.getId());
+        invalidateSearchIndex();
         return rentalMapper.toResponse(savedRental);
     }
 }

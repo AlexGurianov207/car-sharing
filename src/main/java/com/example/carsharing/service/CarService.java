@@ -28,6 +28,7 @@ public class CarService {
     private final CarMapper carMapper;
     private final ExtraServiceRepository extraServiceRepository;
     private final RentalRepository rentalRepository;
+    private final RentalService rentalService;
 
     private static final String CAR_NOT_FOUND_MESSAGE = "Car not found with";
     private static final String ID_MESSAGE = " id: ";
@@ -50,6 +51,7 @@ public class CarService {
 
         Car car = carMapper.toEntity(request);
         Car savedCar = carRepository.save(car);
+        rentalService.invalidateSearchIndex();
         return carMapper.toResponse(savedCar);
     }
 
@@ -113,6 +115,7 @@ public class CarService {
         car.setPricePerHour(request.getPricePerHour());
 
         Car updatedCar = carRepository.save(car);
+        rentalService.invalidateSearchIndex();
         return carMapper.toResponse(updatedCar);
     }
 
@@ -132,10 +135,12 @@ public class CarService {
         if (rentalRepository.existsByCarId(id)) {
             car.setStatus(CarStatus.DELETED);
             carRepository.save(car);
+            rentalService.invalidateSearchIndex();
             return;
         }
 
         carRepository.deleteById(id);
+        rentalService.invalidateSearchIndex();
     }
 
     public CarResponse updateAvailableServices(Long carId, List<Long> serviceIds) {
@@ -168,6 +173,7 @@ public class CarService {
 
         car.setAvailableServices(services);
         Car updatedCar = carRepository.save(car);
+        rentalService.invalidateSearchIndex();
 
         return carMapper.toResponse(updatedCar);
     }
