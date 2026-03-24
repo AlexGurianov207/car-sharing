@@ -45,7 +45,7 @@ public class Rental {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "rental_status")
     @Enumerated(EnumType.STRING)
     private RentalStatus status;
 

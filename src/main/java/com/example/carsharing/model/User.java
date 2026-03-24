@@ -43,7 +43,7 @@ public class User {
     @Column(name = "registration_date", nullable = false)
     private LocalDateTime registrationDate;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "user_status")
     @Enumerated(EnumType.STRING)
     private UserStatus status;
 

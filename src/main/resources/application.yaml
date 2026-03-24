@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/car_sharing
+    url: jdbc:postgresql://localhost:5432/car_sharing?stringtype=unspecified
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -21,7 +21,7 @@ logging:
   level:
     org:
       hibernate:
-        SQL: OFF
+        SQL: DEBUG
         type:
           descriptor:
             sql:

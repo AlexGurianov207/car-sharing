@@ -36,7 +36,7 @@ public class Car {
     @Column(name = "license_plate", nullable = false, unique = true, length = 10)
     private String licensePlate;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "car_status")
     @Enumerated(EnumType.STRING)
     private CarStatus status;
 
