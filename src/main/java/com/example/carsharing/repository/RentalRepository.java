@@ -14,6 +14,24 @@ import java.util.List;
 @Repository
 public interface RentalRepository extends JpaRepository<Rental, Long> {
 
+    interface RentalNativeSearchProjection {
+        Long getId();
+        Long getUserId();
+        String getUserFirstName();
+        String getUserLastName();
+        String getUserFullNameSnapshot();
+        Long getCarId();
+        String getCarBrand();
+        String getCarModel();
+        String getCarLicensePlate();
+        String getCarInfoSnapshot();
+        java.time.LocalDateTime getStartTime();
+        java.time.LocalDateTime getEndTime();
+        String getStatus();
+        String getServiceNamesSnapshot();
+        String getSelectedServiceNames();
+    }
+
     List<Rental> findByUserId(Long userId);
 
     List<Rental> findByCarId(Long carId);
@@ -38,8 +56,8 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
     @Query("SELECT DISTINCT r FROM Rental r WHERE r.id IN :ids")
     List<Rental> findAllWithDetailsByIdIn(@Param("ids") List<Long> ids);
 
-    @Query("SELECT r.id FROM Rental r")
-    Page<Long> findAllIds(Pageable pageable);
+    @EntityGraph(attributePaths = {"user", "car", "selectedServices", "payment"})
+    Page<Rental> findAllBy(Pageable pageable);
 
     @Query("""
             SELECT r.id
@@ -50,16 +68,18 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
     List<Long> findActiveRentalIds();
 
     @Query("""
-            SELECT r.id
+            SELECT DISTINCT r
             FROM Rental r
-            LEFT JOIN r.car c
-            LEFT JOIN r.user u
+            LEFT JOIN FETCH r.car c
+            LEFT JOIN FETCH r.user u
+            LEFT JOIN FETCH r.payment p
+            LEFT JOIN FETCH r.selectedServices s
             WHERE (:carBrand = '' OR LOWER(c.brand) = :carBrand)
               AND (:hasUserId = false OR u.id = :userId)
               AND (:hasStatus = false OR r.status = :status)
             ORDER BY r.startTime DESC
             """)
-    List<Long> searchByFiltersJpqlNoPage(
+    List<Rental> searchByFiltersJpqlNoPageFetch(
             @Param("carBrand") String carBrand,
             @Param("hasUserId") boolean hasUserId,
             @Param("userId") Long userId,
@@ -68,17 +88,42 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
     );
 
     @Query(value = """
-            SELECT r.id
+            SELECT
+                r.id AS id,
+                r.user_id AS userId,
+                u.first_name AS userFirstName,
+                u.last_name AS userLastName,
+                r.user_full_name AS userFullNameSnapshot,
+                r.car_id AS carId,
+                c.brand AS carBrand,
+                c.model AS carModel,
+                c.license_plate AS carLicensePlate,
+                r.car_info AS carInfoSnapshot,
+                r.start_time AS startTime,
+                r.end_time AS endTime,
+                r.status AS status,
+                r.service_names AS serviceNamesSnapshot,
+                COALESCE(
+                    string_agg(es.name, ',' ORDER BY es.name)
+                    FILTER (WHERE es.id IS NOT NULL),
+                    ''
+                ) AS selectedServiceNames
             FROM rentals r
             LEFT JOIN cars c ON r.car_id = c.id
             LEFT JOIN users u ON r.user_id = u.id
+            LEFT JOIN rental_selected_services rss ON r.id = rss.rental_id
+            LEFT JOIN extra_services es ON rss.service_id = es.id
             WHERE (:carBrand = '' OR LOWER(c.brand) = :carBrand)
               AND (:hasUserId = false OR u.id = :userId)
               AND (:hasStatus = false OR r.status = :status)
+            GROUP BY
+                r.id, r.user_id, u.first_name, u.last_name, r.user_full_name,
+                r.car_id, c.brand, c.model, c.license_plate, r.car_info,
+                r.start_time, r.end_time, r.status, r.service_names
             ORDER BY r.start_time DESC
             """,
             nativeQuery = true)
-    List<Long> searchByFiltersNativeNoPage(
+    List<RentalNativeSearchProjection> searchByFiltersNativeNoPage(
             @Param("carBrand") String carBrand,
             @Param("hasUserId") boolean hasUserId,
             @Param("userId") Long userId,

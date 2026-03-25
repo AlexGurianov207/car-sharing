@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -150,9 +151,7 @@ public class RentalService {
     public Page<RentalResponse> getRentalsPage(Pageable pageable) {
         log.info("[PAGE] Request page={}, size={}, sort={}",
                 pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
-        Page<Long> idsPage = rentalRepository.findAllIds(pageable);
-        List<RentalResponse> content = mapIdsToResponses(idsPage.getContent());
-        return new PageImpl<>(content, pageable, idsPage.getTotalElements());
+        return rentalRepository.findAllBy(pageable).map(rentalMapper::toResponse);
     }
 
     private Page<RentalResponse> searchRentalsListAsPageInternal(
@@ -183,26 +182,82 @@ public class RentalService {
         }
         log.info("[CACHE] MISS key={}", key);
 
-        List<Long> rentalIds = queryType == QueryType.NATIVE
-                ? rentalRepository.searchByFiltersNativeNoPage(
-                        normalizedCarBrand,
-                        hasUserId,
-                        safeUserId,
-                        hasStatus,
-                        safeStatus.name()
+        List<RentalResponse> result = queryType == QueryType.NATIVE
+                ? mapNativeRowsToResponses(
+                        rentalRepository.searchByFiltersNativeNoPage(
+                                normalizedCarBrand,
+                                hasUserId,
+                                safeUserId,
+                                hasStatus,
+                                safeStatus.name()
+                        )
                 )
-                : rentalRepository.searchByFiltersJpqlNoPage(
-                        normalizedCarBrand,
-                        hasUserId,
-                        safeUserId,
-                        hasStatus,
-                        safeStatus
-                );
+                : rentalRepository.searchByFiltersJpqlNoPageFetch(
+                                normalizedCarBrand,
+                                hasUserId,
+                                safeUserId,
+                                hasStatus,
+                                safeStatus
+                        ).stream()
+                        .map(rentalMapper::toResponse)
+                        .toList();
 
-        List<RentalResponse> result = mapIdsToResponses(rentalIds);
         Page<RentalResponse> resultPage = new PageImpl<>(result);
         putToIndex(key, resultPage);
         return resultPage;
+    }
+
+    private List<RentalResponse> mapNativeRowsToResponses(
+            List<RentalRepository.RentalNativeSearchProjection> rows
+    ) {
+        return rows.stream()
+                .map(this::mapNativeRowToResponse)
+                .toList();
+    }
+
+    private RentalResponse mapNativeRowToResponse(RentalRepository.RentalNativeSearchProjection row) {
+        RentalResponse response = new RentalResponse();
+        response.setId(row.getId());
+        response.setUserId(row.getUserId());
+        response.setCarId(row.getCarId());
+        response.setStartTime(row.getStartTime());
+        response.setEndTime(row.getEndTime());
+        response.setStatus(row.getStatus());
+
+        boolean completed = RentalStatus.COMPLETED.name().equals(row.getStatus());
+        if (completed && row.getUserFullNameSnapshot() != null && !row.getUserFullNameSnapshot().isBlank()) {
+            response.setUserFullName(row.getUserFullNameSnapshot());
+        } else {
+            String firstName = row.getUserFirstName() == null ? "" : row.getUserFirstName();
+            String lastName = row.getUserLastName() == null ? "" : row.getUserLastName();
+            String fullName = (firstName + " " + lastName).trim();
+            response.setUserFullName(fullName.isEmpty() ? row.getUserFullNameSnapshot() : fullName);
+        }
+
+        if (completed && row.getCarInfoSnapshot() != null && !row.getCarInfoSnapshot().isBlank()) {
+            response.setCarInfo(row.getCarInfoSnapshot());
+        } else if (row.getCarBrand() != null && row.getCarModel() != null && row.getCarLicensePlate() != null) {
+            response.setCarInfo(row.getCarBrand() + " " + row.getCarModel() + " (" + row.getCarLicensePlate() + ")");
+        } else {
+            response.setCarInfo(row.getCarInfoSnapshot());
+        }
+
+        if (completed && row.getServiceNamesSnapshot() != null && !row.getServiceNamesSnapshot().isBlank()) {
+            response.setSelectedServices(splitServiceNames(row.getServiceNamesSnapshot()));
+        } else {
+            response.setSelectedServices(splitServiceNames(row.getSelectedServiceNames()));
+        }
+        return response;
+    }
+
+    private List<String> splitServiceNames(String serviceNames) {
+        if (serviceNames == null || serviceNames.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(serviceNames.split("[;,]"))
+                .map(String::trim)
+                .filter(name -> !name.isEmpty())
+                .toList();
     }
 
     private List<RentalResponse> mapIdsToResponses(List<Long> ids) {
