@@ -21,9 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
@@ -102,23 +100,6 @@ public class RentalService {
         return mapPageWithDetails(rentalsPage, pageable);
     }
 
-    @Transactional(readOnly = true)
-    public Page<RentalResponse> searchRentals(
-            String carBrand,
-            Long userId,
-            RentalStatus status,
-            boolean useNative,
-            Pageable pageable
-    ) {
-        return searchRentalsInternal(
-                carBrand,
-                userId,
-                status,
-                useNative ? QueryType.NATIVE : QueryType.JPQL,
-                pageable
-        );
-    }
-
     private Page<RentalResponse> searchRentalsListAsPageInternal(
             String carBrand,
             Long userId,
@@ -165,58 +146,6 @@ public class RentalService {
 
         List<RentalResponse> result = mapListWithDetails(rentals);
         Page<RentalResponse> resultPage = new PageImpl<>(result);
-        putToIndex(key, resultPage);
-        return resultPage;
-    }
-
-    private Page<RentalResponse> searchRentalsInternal(
-            String carBrand,
-            Long userId,
-            RentalStatus status,
-            QueryType queryType,
-            Pageable pageable
-    ) {
-        String normalizedCarBrand = normalize(carBrand);
-        boolean hasUserId = userId != null;
-        boolean hasStatus = status != null;
-        Long safeUserId = hasUserId ? userId : -1L;
-        RentalStatus safeStatus = hasStatus ? status : RentalStatus.ACTIVE;
-        RentalSearchCacheKey key = new RentalSearchCacheKey(
-                normalizedCarBrand,
-                userId,
-                status,
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                pageable.getSort().toString(),
-                queryType
-        );
-
-        Page<RentalResponse> cachedPage = rentalSearchIndex.get(key);
-        if (cachedPage != null) {
-            log.info("[CACHE] HIT key={}", key);
-            return cachedPage;
-        }
-        log.info("[CACHE] MISS key={}", key);
-
-        Page<Rental> rentalsPage = queryType == QueryType.NATIVE
-                ? rentalRepository.searchByFiltersNative(
-                        normalizedCarBrand,
-                        hasUserId,
-                        safeUserId,
-                        hasStatus,
-                        safeStatus.name(),
-                        toNativePageable(pageable)
-                )
-                : rentalRepository.searchByFiltersJpql(
-                        normalizedCarBrand,
-                        hasUserId,
-                        safeUserId,
-                        hasStatus,
-                        safeStatus,
-                        pageable
-                );
-
-        Page<RentalResponse> resultPage = mapPageWithDetails(rentalsPage, pageable);
         putToIndex(key, resultPage);
         return resultPage;
     }
@@ -269,24 +198,6 @@ public class RentalService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? "" : trimmed.toLowerCase(Locale.ROOT);
-    }
-
-    private Pageable toNativePageable(Pageable pageable) {
-        if (pageable.getSort().isUnsorted()) {
-            return pageable;
-        }
-        Sort nativeSort = Sort.by(
-                pageable.getSort().stream()
-                        .map(order -> new Sort.Order(order.getDirection(), toSnakeCase(order.getProperty())))
-                        .toList()
-        );
-        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), nativeSort);
-    }
-
-    private String toSnakeCase(String value) {
-        return value
-                .replaceAll("([a-z])([A-Z]+)", "$1_$2")
-                .toLowerCase();
     }
 
     @Transactional
