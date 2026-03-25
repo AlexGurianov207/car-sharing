@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.StringJoiner;
 
 @Slf4j
 @Service
@@ -63,15 +64,68 @@ public class RentalService {
         NATIVE
     }
 
-    private record RentalSearchCacheKey(
-            String carBrand,
-            Long userId,
-            RentalStatus status,
-            int page,
-            int size,
-            String sort,
-            QueryType queryType
-    ) {
+    private static final class RentalSearchCacheKey {
+        private final String carBrand;
+        private final Long userId;
+        private final RentalStatus status;
+        private final int page;
+        private final int size;
+        private final String sort;
+        private final QueryType queryType;
+
+        private RentalSearchCacheKey(
+                String carBrand,
+                Long userId,
+                RentalStatus status,
+                int page,
+                int size,
+                String sort,
+                QueryType queryType
+        ) {
+            this.carBrand = carBrand;
+            this.userId = userId;
+            this.status = status;
+            this.page = page;
+            this.size = size;
+            this.sort = sort;
+            this.queryType = queryType;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            RentalSearchCacheKey that = (RentalSearchCacheKey) o;
+            return page == that.page
+                    && size == that.size
+                    && Objects.equals(carBrand, that.carBrand)
+                    && Objects.equals(userId, that.userId)
+                    && status == that.status
+                    && Objects.equals(sort, that.sort)
+                    && queryType == that.queryType;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(carBrand, userId, status, page, size, sort, queryType);
+        }
+
+        @Override
+        public String toString() {
+            return new StringJoiner(", ", RentalSearchCacheKey.class.getSimpleName() + "[", "]")
+                    .add("carBrand='" + carBrand + "'")
+                    .add("userId=" + userId)
+                    .add("status=" + status)
+                    .add("page=" + page)
+                    .add("size=" + size)
+                    .add("sort='" + sort + "'")
+                    .add("queryType=" + queryType)
+                    .toString();
+        }
     }
 
     @Transactional(readOnly = true)
@@ -96,8 +150,9 @@ public class RentalService {
     public Page<RentalResponse> getRentalsPage(Pageable pageable) {
         log.info("[PAGE] Request page={}, size={}, sort={}",
                 pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
-        Page<Rental> rentalsPage = rentalRepository.findAll(pageable);
-        return mapPageWithDetails(rentalsPage, pageable);
+        Page<Long> idsPage = rentalRepository.findAllIds(pageable);
+        List<RentalResponse> content = mapIdsToResponses(idsPage.getContent());
+        return new PageImpl<>(content, pageable, idsPage.getTotalElements());
     }
 
     private Page<RentalResponse> searchRentalsListAsPageInternal(
@@ -128,7 +183,7 @@ public class RentalService {
         }
         log.info("[CACHE] MISS key={}", key);
 
-        List<Rental> rentals = queryType == QueryType.NATIVE
+        List<Long> rentalIds = queryType == QueryType.NATIVE
                 ? rentalRepository.searchByFiltersNativeNoPage(
                         normalizedCarBrand,
                         hasUserId,
@@ -144,7 +199,7 @@ public class RentalService {
                         safeStatus
                 );
 
-        List<RentalResponse> result = mapListWithDetails(rentals);
+        List<RentalResponse> result = mapIdsToResponses(rentalIds);
         Page<RentalResponse> resultPage = new PageImpl<>(result);
         putToIndex(key, resultPage);
         return resultPage;
@@ -162,6 +217,13 @@ public class RentalService {
         List<Long> ids = rentals.stream()
                 .map(Rental::getId)
                 .toList();
+        return mapIdsToResponses(ids);
+    }
+
+    private List<RentalResponse> mapIdsToResponses(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
         Map<Long, Rental> rentalsById = rentalRepository.findAllWithDetailsByIdIn(ids).stream()
                 .collect(Collectors.toMap(Rental::getId, Function.identity()));
 
@@ -353,15 +415,13 @@ public class RentalService {
     }
 
     public List<RentalResponse> getActiveRentals() {
-        List<Rental> rentals = rentalRepository.findByEndTimeIsNull();
+        List<Long> activeIds = rentalRepository.findActiveRentalIds();
 
-        if (rentals.isEmpty()) {
+        if (activeIds.isEmpty()) {
             throw new NoSuchElementException("No active rentals found");
         }
 
-        return rentals.stream()
-                .map(rentalMapper::toResponse)
-                .toList();
+        return mapIdsToResponses(activeIds);
     }
 
     @Transactional

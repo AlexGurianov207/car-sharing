@@ -2,6 +2,8 @@ package com.example.carsharing.repository;
 
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.RentalStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -36,8 +38,19 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
     @Query("SELECT DISTINCT r FROM Rental r WHERE r.id IN :ids")
     List<Rental> findAllWithDetailsByIdIn(@Param("ids") List<Long> ids);
 
+    @Query("SELECT r.id FROM Rental r")
+    Page<Long> findAllIds(Pageable pageable);
+
     @Query("""
-            SELECT r
+            SELECT r.id
+            FROM Rental r
+            WHERE r.endTime IS NULL
+            ORDER BY r.startTime DESC
+            """)
+    List<Long> findActiveRentalIds();
+
+    @Query("""
+            SELECT r.id
             FROM Rental r
             LEFT JOIN r.car c
             LEFT JOIN r.user u
@@ -46,7 +59,7 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
               AND (:hasStatus = false OR r.status = :status)
             ORDER BY r.startTime DESC
             """)
-    List<Rental> searchByFiltersJpqlNoPage(
+    List<Long> searchByFiltersJpqlNoPage(
             @Param("carBrand") String carBrand,
             @Param("hasUserId") boolean hasUserId,
             @Param("userId") Long userId,
@@ -55,7 +68,7 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
     );
 
     @Query(value = """
-            SELECT r.*
+            SELECT r.id
             FROM rentals r
             LEFT JOIN cars c ON r.car_id = c.id
             LEFT JOIN users u ON r.user_id = u.id
@@ -65,7 +78,7 @@ public interface RentalRepository extends JpaRepository<Rental, Long> {
             ORDER BY r.start_time DESC
             """,
             nativeQuery = true)
-    List<Rental> searchByFiltersNativeNoPage(
+    List<Long> searchByFiltersNativeNoPage(
             @Param("carBrand") String carBrand,
             @Param("hasUserId") boolean hasUserId,
             @Param("userId") Long userId,
