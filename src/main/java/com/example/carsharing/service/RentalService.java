@@ -205,21 +205,6 @@ public class RentalService {
         return resultPage;
     }
 
-    private Page<RentalResponse> mapPageWithDetails(Page<Rental> rentalsPage, Pageable pageable) {
-        List<RentalResponse> content = mapListWithDetails(rentalsPage.getContent());
-        return new PageImpl<>(content, pageable, rentalsPage.getTotalElements());
-    }
-
-    private List<RentalResponse> mapListWithDetails(List<Rental> rentals) {
-        if (rentals.isEmpty()) {
-            return List.of();
-        }
-        List<Long> ids = rentals.stream()
-                .map(Rental::getId)
-                .toList();
-        return mapIdsToResponses(ids);
-    }
-
     private List<RentalResponse> mapIdsToResponses(List<Long> ids) {
         if (ids.isEmpty()) {
             return List.of();
