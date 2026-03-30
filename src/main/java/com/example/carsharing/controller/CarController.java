@@ -5,8 +5,11 @@ import com.example.carsharing.dto.CarResponse;
 import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.service.CarService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/cars")
 @RequiredArgsConstructor
+@Validated
 public class CarController {
 
     private final CarService carService;
@@ -30,7 +34,8 @@ public class CarController {
     @GetMapping
     public List<CarResponse> getAllCars(
             @RequestParam(value = "status", required = false) CarStatus status,
-            @RequestParam(value = "maxPrice", required = false) Double maxPrice,
+            @RequestParam(value = "maxPrice", required = false)
+            @Positive(message = "Max price must be positive") Double maxPrice,
             @RequestParam(value = "brand", required = false) String brand,
             @RequestParam(value = "model", required = false) String model) {
 
@@ -44,7 +49,7 @@ public class CarController {
     }
 
     @GetMapping("/{id}")
-    public CarResponse getCarById(@PathVariable Long id) {
+    public CarResponse getCarById(@PathVariable @Positive(message = "Car ID must be positive") Long id) {
         return carService.findById(id);
     }
 
@@ -60,20 +65,24 @@ public class CarController {
     }
 
     @PutMapping("/{id}")
-    public CarResponse updateCar(@PathVariable Long id, @Valid @RequestBody CarCreateRequest request) {
+    public CarResponse updateCar(
+            @PathVariable @Positive(message = "Car ID must be positive") Long id,
+            @Valid @RequestBody CarCreateRequest request) {
         return carService.updateCar(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCar(@PathVariable Long id) {
+    public void deleteCar(@PathVariable @Positive(message = "Car ID must be positive") Long id) {
         carService.deleteCar(id);
     }
 
     @PutMapping("/{id}/available-services")
     public CarResponse updateAvailableServices(
-            @PathVariable Long id,
-            @RequestBody List<Long> serviceIds) {
+            @PathVariable @Positive(message = "Car ID must be positive") Long id,
+            @NotNull(message = "Service IDs list is required")
+            @Valid @RequestBody List<@NotNull(message = "Service ID cannot be null")
+            @Positive(message = "Service ID must be positive") Long> serviceIds) {
         return carService.updateAvailableServices(id, serviceIds);
     }
 }

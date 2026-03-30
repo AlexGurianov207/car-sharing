@@ -2,8 +2,10 @@ package com.example.carsharing.controller;
 
 import com.example.carsharing.dto.PaymentResponse;
 import com.example.carsharing.service.PaymentService;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
+@Validated
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -27,18 +30,18 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    public PaymentResponse getPaymentById(@PathVariable Long id) {
+    public PaymentResponse getPaymentById(@PathVariable @Positive(message = "Payment ID must be positive") Long id) {
         return paymentService.getPaymentById(id);
     }
 
     @PatchMapping("/{id}/refund")
-    public PaymentResponse refundPayment(@PathVariable Long id) {
+    public PaymentResponse refundPayment(@PathVariable @Positive(message = "Payment ID must be positive") Long id) {
         return paymentService.refundPayment(id);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletePayment(@PathVariable Long id) {
+    public void deletePayment(@PathVariable @Positive(message = "Payment ID must be positive") Long id) {
         paymentService.deletePayment(id);
     }
 }

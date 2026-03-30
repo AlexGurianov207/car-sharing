@@ -5,8 +5,11 @@ import com.example.carsharing.dto.ExtraServiceResponse;
 import com.example.carsharing.model.ServiceCategory;
 import com.example.carsharing.service.ExtraServiceService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/services")
 @RequiredArgsConstructor
+@Validated
 public class ExtraServiceController {
 
     private final ExtraServiceService extraServiceService;
@@ -36,7 +40,8 @@ public class ExtraServiceController {
     }
 
     @GetMapping("/{id}")
-    public ExtraServiceResponse getServiceById(@PathVariable Long id) {
+    public ExtraServiceResponse getServiceById(
+            @PathVariable @Positive(message = "Service ID must be positive") Long id) {
         return extraServiceService.getServiceById(id);
     }
 
@@ -48,19 +53,21 @@ public class ExtraServiceController {
 
     @PutMapping("/{id}")
     public ExtraServiceResponse updateService(
-            @PathVariable Long id,
+            @PathVariable @Positive(message = "Service ID must be positive") Long id,
             @Valid @RequestBody ExtraServiceCreateRequest request) {
         return extraServiceService.updateService(id, request);
     }
 
     @PatchMapping("/{id}/status")
-    public void updateServiceStatus(@PathVariable Long id, @RequestParam Boolean isActive) {
+    public void updateServiceStatus(
+            @PathVariable @Positive(message = "Service ID must be positive") Long id,
+            @RequestParam @NotNull(message = "isActive is required") Boolean isActive) {
         extraServiceService.updateServiceStatus(id, isActive);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteService(@PathVariable Long id) {
+    public void deleteService(@PathVariable @Positive(message = "Service ID must be positive") Long id) {
         extraServiceService.deleteService(id);
     }
 }
