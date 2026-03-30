@@ -2,6 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.PaymentCreateRequest;
 import com.example.carsharing.dto.PaymentResponse;
+import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.Payment;
 import com.example.carsharing.model.PaymentStatus;
 import com.example.carsharing.model.Rental;
@@ -74,7 +75,7 @@ public class PaymentService {
 
     public PaymentResponse getPaymentById(Long id) {
         Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(PAYMENT_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(PAYMENT_NOT_FOUND_MESSAGE + id));
         return paymentMapper.toResponse(payment);
     }
 
@@ -86,7 +87,7 @@ public class PaymentService {
 
     public PaymentResponse refundPayment(Long id) {
         Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(PAYMENT_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(PAYMENT_NOT_FOUND_MESSAGE + id));
 
         if (payment.getStatus() != PaymentStatus.COMPLETED) {
             throw new InvalidDataAccessApiUsageException("Cannot refund payment with status: " + payment.getStatus());

@@ -2,6 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
+import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.User;
 import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.repository.RentalRepository;
@@ -13,7 +14,6 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -43,13 +43,13 @@ public class UserService {
 
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE + id));
         return userMapper.toResponse(user);
     }
 
     public UserResponse getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
         return userMapper.toResponse(user);
     }
 
@@ -61,7 +61,7 @@ public class UserService {
 
     public UserResponse updateUser(Long id, UserCreateRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE + id));
 
         if (user.getStatus() == UserStatus.DELETED) {
             throw new InvalidDataAccessApiUsageException("Cannot update deleted user");
@@ -79,7 +79,7 @@ public class UserService {
 
     public void updateUserStatus(Long id, UserStatus newStatus) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (newStatus != UserStatus.ACTIVE && newStatus != UserStatus.BLOCKED) {
             throw new IllegalArgumentException("Status can only be changed to ACTIVE or BLOCKED");
@@ -101,7 +101,7 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException(USER_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE + id));
 
         if (user.getStatus() == UserStatus.DELETED) {
             return;

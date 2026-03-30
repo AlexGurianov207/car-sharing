@@ -2,6 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
+import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.model.ExtraService;
@@ -305,7 +306,7 @@ public class RentalService {
     @Transactional
     public RentalResponse createRental(RentalCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + request.getUserId()));
 
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new InvalidDataAccessApiUsageException("User is not active. Status: " + user.getStatus());
@@ -317,7 +318,7 @@ public class RentalService {
         }
 
         Car car = carRepository.findById(request.getCarId())
-                .orElseThrow(() -> new RuntimeException("Car not found with id: " + request.getCarId()));
+                .orElseThrow(() -> new NotFoundException("Car not found with id: " + request.getCarId()));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
             throw new InvalidDataAccessApiUsageException("Car is not available. Status: " + car.getStatus());
@@ -355,7 +356,7 @@ public class RentalService {
     @Transactional
     public RentalResponse completeRental(Long id) {
         Rental rental = rentalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(RENTAL_NOT_FOUND_MESSAGE + id));
 
         if (rental.getStatus() != RentalStatus.ACTIVE) {
             throw new InvalidDataAccessApiUsageException("Rental is not active. Status: " + rental.getStatus());
@@ -418,7 +419,7 @@ public class RentalService {
 
     public RentalResponse getRentalById(Long id) {
         Rental rental = rentalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(RENTAL_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(RENTAL_NOT_FOUND_MESSAGE + id));
         return rentalMapper.toResponse(rental);
     }
 
@@ -510,10 +511,10 @@ public class RentalService {
         log.info("=== ДЕМОНСТРАЦИЯ БЕЗ @Transactional ===");
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
 
         Car car = carRepository.findById(request.getCarId())
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE));
+                .orElseThrow(() -> new NotFoundException(CAR_NOT_FOUND_MESSAGE));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
             throw new InvalidDataAccessApiUsageException("Car is not available");
@@ -562,10 +563,10 @@ public class RentalService {
         log.info("=== ДЕМОНСТРАЦИЯ С @Transactional ===");
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
 
         Car car = carRepository.findById(request.getCarId())
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE));
+                .orElseThrow(() -> new NotFoundException(CAR_NOT_FOUND_MESSAGE));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
             throw new InvalidDataAccessApiUsageException("Car is not available");

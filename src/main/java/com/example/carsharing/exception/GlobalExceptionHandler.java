@@ -6,8 +6,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
-import org.springframework.web.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,24 +22,12 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntimeException(
-            RuntimeException ex,
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFoundException(
+            NotFoundException ex,
             HttpServletRequest request
     ) {
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-
-        if (ex.getMessage() != null) {
-            if (ex.getMessage().contains("not found with id")) {
-                status = HttpStatus.NOT_FOUND;
-            } else if (ex.getMessage().contains("not available") ||
-                    ex.getMessage().contains("already exists") ||
-                    ex.getMessage().contains("already rented")) {
-                status = HttpStatus.CONFLICT;
-            }
-        }
-
-        return buildResponse(status, ex.getMessage(), request.getRequestURI(), List.of());
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI(), List.of());
     }
 
     @ExceptionHandler(NoSuchElementException.class)
@@ -70,7 +58,6 @@ public class GlobalExceptionHandler {
             InvalidDataAccessApiUsageException.class,
             IllegalArgumentException.class,
             MissingServletRequestParameterException.class,
-            MethodArgumentTypeMismatchException.class,
             HttpMessageNotReadableException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequestExceptions(
@@ -78,6 +65,28 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), List.of());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request
+    ) {
+        String parameterName = ex.getName();
+        String message = "Invalid value for parameter '" + parameterName + "'";
+        List<String> details = List.of();
+
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+            Object[] enumConstants = ex.getRequiredType().getEnumConstants();
+            if (enumConstants != null && enumConstants.length > 0) {
+                String allowedValues = java.util.Arrays.stream(enumConstants)
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", "));
+                details = List.of("Allowed values: " + allowedValues);
+            }
+        }
+
+        return buildResponse(HttpStatus.BAD_REQUEST, message, request.getRequestURI(), details);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

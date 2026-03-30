@@ -3,6 +3,7 @@ package com.example.carsharing.service;
 import com.example.carsharing.dto.ExtraServiceCreateRequest;
 import com.example.carsharing.dto.ExtraServiceResponse;
 import com.example.carsharing.exception.ConflictException;
+import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.ExtraService;
 import com.example.carsharing.model.ServiceCategory;
@@ -40,7 +41,7 @@ public class ExtraServiceService {
 
     public ExtraServiceResponse getServiceById(Long id) {
         ExtraService service = extraServiceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(SERVICE_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(SERVICE_NOT_FOUND_MESSAGE + id));
         return extraServiceMapper.toResponse(service);
     }
 
@@ -62,7 +63,7 @@ public class ExtraServiceService {
 
     public ExtraServiceResponse updateService(Long id, ExtraServiceCreateRequest request) {
         ExtraService service = extraServiceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(SERVICE_NOT_FOUND_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(SERVICE_NOT_FOUND_MESSAGE + id));
 
         if (service.getIsActive()) {
             throw new InvalidDataAccessApiUsageException(
@@ -105,7 +106,7 @@ public class ExtraServiceService {
 
     public void deleteService(Long id) {
         if (!extraServiceRepository.existsById(id)) {
-            throw new ConflictException(SERVICE_NOT_FOUND_MESSAGE + id);
+            throw new NotFoundException(SERVICE_NOT_FOUND_MESSAGE + id);
         }
         extraServiceRepository.deleteById(id);
     }

@@ -2,6 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.CarCreateRequest;
 import com.example.carsharing.dto.CarResponse;
+import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.model.ExtraService;
@@ -57,13 +58,13 @@ public class CarService {
 
     public CarResponse findById(Long id) {
         Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
         return carMapper.toResponse(car);
     }
 
     public CarResponse findByLicensePlate(String licensePlate) {
         Car car = carRepository.findByLicensePlate(licensePlate)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + " license plate: " + licensePlate));
+                .orElseThrow(() -> new NotFoundException(CAR_NOT_FOUND_MESSAGE + " license plate: " + licensePlate));
         return carMapper.toResponse(car);
     }
 
@@ -94,7 +95,7 @@ public class CarService {
 
     public CarResponse updateCar(Long id, CarCreateRequest request) {
         Car car = carRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
+                .orElseThrow(() -> new NotFoundException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + id));
 
         if (car.getStatus() == CarStatus.DELETED) {
             throw new InvalidDataAccessApiUsageException("Cannot update deleted car");
@@ -145,7 +146,7 @@ public class CarService {
 
     public CarResponse updateAvailableServices(Long carId, List<Long> serviceIds) {
         Car car = carRepository.findById(carId)
-                .orElseThrow(() -> new RuntimeException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + carId));
+                .orElseThrow(() -> new NotFoundException(CAR_NOT_FOUND_MESSAGE + ID_MESSAGE + carId));
 
         if (car.getStatus() == CarStatus.DELETED) {
             throw new InvalidDataAccessApiUsageException("Cannot update deleted car");
