@@ -61,9 +61,12 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI(), List.of());
     }
 
-    @ExceptionHandler({ InvalidDataAccessApiUsageException.class, IllegalArgumentException.class,
-            MissingServletRequestParameterException.class,
-            HttpMessageNotReadableException.class})
+    @ExceptionHandler({
+        InvalidDataAccessApiUsageException.class,
+        IllegalArgumentException.class,
+        MissingServletRequestParameterException.class,
+        HttpMessageNotReadableException.class
+    })
     public ResponseEntity<ErrorResponse> handleBadRequestExceptions(
             Exception ex,
             HttpServletRequest request
@@ -103,7 +106,7 @@ public class GlobalExceptionHandler {
         List<String> details = ex.getBindingResult().getFieldErrors().stream()
                 .sorted(Comparator.comparing(FieldError::getField))
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.toList());
+                .toList();
 
         log.warn("[EX] {} {} -> 400: validation failed ({})",
                 request.getMethod(), request.getRequestURI(), details.size());

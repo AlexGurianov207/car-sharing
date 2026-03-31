@@ -225,30 +225,51 @@ public class RentalService {
         response.setEndTime(row.getEndTime());
         response.setStatus(row.getStatus());
 
-        boolean completed = RentalStatus.COMPLETED.name().equals(row.getStatus());
-        if (completed && row.getUserFullNameSnapshot() != null && !row.getUserFullNameSnapshot().isBlank()) {
-            response.setUserFullName(row.getUserFullNameSnapshot());
-        } else {
-            String firstName = row.getUserFirstName() == null ? "" : row.getUserFirstName();
-            String lastName = row.getUserLastName() == null ? "" : row.getUserLastName();
-            String fullName = (firstName + " " + lastName).trim();
-            response.setUserFullName(fullName.isEmpty() ? row.getUserFullNameSnapshot() : fullName);
-        }
-
-        if (completed && row.getCarInfoSnapshot() != null && !row.getCarInfoSnapshot().isBlank()) {
-            response.setCarInfo(row.getCarInfoSnapshot());
-        } else if (row.getCarBrand() != null && row.getCarModel() != null && row.getCarLicensePlate() != null) {
-            response.setCarInfo(row.getCarBrand() + " " + row.getCarModel() + " (" + row.getCarLicensePlate() + ")");
-        } else {
-            response.setCarInfo(row.getCarInfoSnapshot());
-        }
-
-        if (completed && row.getServiceNamesSnapshot() != null && !row.getServiceNamesSnapshot().isBlank()) {
-            response.setSelectedServices(splitServiceNames(row.getServiceNamesSnapshot()));
-        } else {
-            response.setSelectedServices(splitServiceNames(row.getSelectedServiceNames()));
-        }
+        boolean completed = isCompletedStatus(row.getStatus());
+        response.setUserFullName(resolveUserFullName(row, completed));
+        response.setCarInfo(resolveCarInfo(row, completed));
+        response.setSelectedServices(resolveSelectedServices(row, completed));
         return response;
+    }
+
+    private boolean isCompletedStatus(String status) {
+        return RentalStatus.COMPLETED.name().equals(status);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private String resolveUserFullName(RentalRepository.RentalNativeSearchProjection row, boolean completed) {
+        if (completed && hasText(row.getUserFullNameSnapshot())) {
+            return row.getUserFullNameSnapshot();
+        }
+
+        String firstName = row.getUserFirstName() == null ? "" : row.getUserFirstName();
+        String lastName = row.getUserLastName() == null ? "" : row.getUserLastName();
+        String fullName = (firstName + " " + lastName).trim();
+        return fullName.isEmpty() ? row.getUserFullNameSnapshot() : fullName;
+    }
+
+    private String resolveCarInfo(RentalRepository.RentalNativeSearchProjection row, boolean completed) {
+        if (completed && hasText(row.getCarInfoSnapshot())) {
+            return row.getCarInfoSnapshot();
+        }
+
+        boolean hasLiveCarInfo = row.getCarBrand() != null
+                && row.getCarModel() != null
+                && row.getCarLicensePlate() != null;
+        if (hasLiveCarInfo) {
+            return row.getCarBrand() + " " + row.getCarModel() + " (" + row.getCarLicensePlate() + ")";
+        }
+        return row.getCarInfoSnapshot();
+    }
+
+    private List<String> resolveSelectedServices(RentalRepository.RentalNativeSearchProjection row, boolean completed) {
+        String services = completed && hasText(row.getServiceNamesSnapshot())
+                ? row.getServiceNamesSnapshot()
+                : row.getSelectedServiceNames();
+        return splitServiceNames(services);
     }
 
     private List<String> splitServiceNames(String serviceNames) {
