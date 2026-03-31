@@ -4,6 +4,8 @@ import com.example.carsharing.dto.CarCreateRequest;
 import com.example.carsharing.dto.CarResponse;
 import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.service.CarService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -27,11 +29,13 @@ import java.util.List;
 @RequestMapping("/api/cars")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Cars", description = "Operations for car management")
 public class CarController {
 
     private final CarService carService;
 
     @GetMapping
+    @Operation(summary = "Get all cars with optional filters")
     public List<CarResponse> getAllCars(
             @RequestParam(value = "status", required = false) CarStatus status,
             @RequestParam(value = "maxPrice", required = false)
@@ -49,22 +53,26 @@ public class CarController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get car by ID")
     public CarResponse getCarById(@PathVariable @Positive(message = "Car ID must be positive") Long id) {
         return carService.findById(id);
     }
 
     @GetMapping("/by-license/{licensePlate}")
+    @Operation(summary = "Get car by license plate")
     public CarResponse getCarByLicensePlate(@PathVariable String licensePlate) {
         return carService.findByLicensePlate(licensePlate);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create car")
     public CarResponse createCar(@Valid @RequestBody CarCreateRequest request) {
         return carService.createCar(request);
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update car")
     public CarResponse updateCar(
             @PathVariable @Positive(message = "Car ID must be positive") Long id,
             @Valid @RequestBody CarCreateRequest request) {
@@ -73,11 +81,13 @@ public class CarController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete car")
     public void deleteCar(@PathVariable @Positive(message = "Car ID must be positive") Long id) {
         carService.deleteCar(id);
     }
 
     @PutMapping("/{id}/available-services")
+    @Operation(summary = "Update car available extra services")
     public CarResponse updateAvailableServices(
             @PathVariable @Positive(message = "Car ID must be positive") Long id,
             @NotNull(message = "Service IDs list is required")

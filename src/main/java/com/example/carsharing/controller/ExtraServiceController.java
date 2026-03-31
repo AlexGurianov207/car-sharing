@@ -4,6 +4,8 @@ import com.example.carsharing.dto.ExtraServiceCreateRequest;
 import com.example.carsharing.dto.ExtraServiceResponse;
 import com.example.carsharing.model.ServiceCategory;
 import com.example.carsharing.service.ExtraServiceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -28,11 +30,13 @@ import java.util.List;
 @RequestMapping("/api/services")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Extra Services", description = "Operations for extra services")
 public class ExtraServiceController {
 
     private final ExtraServiceService extraServiceService;
 
     @GetMapping
+    @Operation(summary = "Get all extra services with optional filters")
     public List<ExtraServiceResponse> getAllServices(
             @RequestParam(required = false) ServiceCategory category,
             @RequestParam(required = false) Boolean onlyActive) {
@@ -40,6 +44,7 @@ public class ExtraServiceController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get extra service by ID")
     public ExtraServiceResponse getServiceById(
             @PathVariable @Positive(message = "Service ID must be positive") Long id) {
         return extraServiceService.getServiceById(id);
@@ -47,11 +52,13 @@ public class ExtraServiceController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create extra service")
     public ExtraServiceResponse createService(@Valid @RequestBody ExtraServiceCreateRequest request) {
         return extraServiceService.createService(request);
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update extra service")
     public ExtraServiceResponse updateService(
             @PathVariable @Positive(message = "Service ID must be positive") Long id,
             @Valid @RequestBody ExtraServiceCreateRequest request) {
@@ -59,6 +66,7 @@ public class ExtraServiceController {
     }
 
     @PatchMapping("/{id}/status")
+    @Operation(summary = "Update extra service active status")
     public void updateServiceStatus(
             @PathVariable @Positive(message = "Service ID must be positive") Long id,
             @RequestParam @NotNull(message = "isActive is required") Boolean isActive) {
@@ -67,6 +75,7 @@ public class ExtraServiceController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete extra service")
     public void deleteService(@PathVariable @Positive(message = "Service ID must be positive") Long id) {
         extraServiceService.deleteService(id);
     }

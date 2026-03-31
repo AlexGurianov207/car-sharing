@@ -2,6 +2,7 @@ package com.example.carsharing.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
@@ -13,12 +14,14 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -27,6 +30,7 @@ public class GlobalExceptionHandler {
             NotFoundException ex,
             HttpServletRequest request
     ) {
+        log.warn("[EX] {} {} -> 404: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI(), List.of());
     }
 
@@ -35,6 +39,7 @@ public class GlobalExceptionHandler {
             NoSuchElementException ex,
             HttpServletRequest request
     ) {
+        log.warn("[EX] {} {} -> 404: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI(), List.of());
     }
 
@@ -43,6 +48,7 @@ public class GlobalExceptionHandler {
             ConflictException ex,
             HttpServletRequest request
     ) {
+        log.warn("[EX] {} {} -> 409: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI(), List.of());
     }
 
@@ -51,19 +57,18 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException ex,
             HttpServletRequest request
     ) {
+        log.warn("[EX] {} {} -> 409: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI(), List.of());
     }
 
-    @ExceptionHandler({
-            InvalidDataAccessApiUsageException.class,
-            IllegalArgumentException.class,
+    @ExceptionHandler({ InvalidDataAccessApiUsageException.class, IllegalArgumentException.class,
             MissingServletRequestParameterException.class,
-            HttpMessageNotReadableException.class
-    })
+            HttpMessageNotReadableException.class})
     public ResponseEntity<ErrorResponse> handleBadRequestExceptions(
             Exception ex,
             HttpServletRequest request
     ) {
+        log.warn("[EX] {} {} -> 400: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), List.of());
     }
 
@@ -86,6 +91,7 @@ public class GlobalExceptionHandler {
             }
         }
 
+        log.warn("[EX] {} {} -> 400: {}", request.getMethod(), request.getRequestURI(), message);
         return buildResponse(HttpStatus.BAD_REQUEST, message, request.getRequestURI(), details);
     }
 
@@ -99,6 +105,8 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.toList());
 
+        log.warn("[EX] {} {} -> 400: validation failed ({})",
+                request.getMethod(), request.getRequestURI(), details.size());
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed",
@@ -117,6 +125,8 @@ public class GlobalExceptionHandler {
                 .sorted()
                 .toList();
 
+        log.warn("[EX] {} {} -> 400: constraint violation ({})",
+                request.getMethod(), request.getRequestURI(), details.size());
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed",
@@ -130,6 +140,7 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
+        log.error("[EX] {} {} -> 500: {}", request.getMethod(), request.getRequestURI(), ex.getMessage(), ex);
         return buildResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Unexpected server error",

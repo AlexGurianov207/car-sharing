@@ -4,6 +4,8 @@ import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
 import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Positive;
@@ -28,32 +30,38 @@ import java.util.List;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Users", description = "Operations for user management")
 public class UserController {
 
     private final UserService userService;
 
     @GetMapping
+    @Operation(summary = "Get all users")
     public List<UserResponse> getAllUsers() {
         return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get user by ID")
     public UserResponse getUserById(@PathVariable @Positive(message = "User ID must be positive") Long id) {
         return userService.getUserById(id);
     }
 
     @GetMapping("/by-email")
+    @Operation(summary = "Get user by email")
     public UserResponse getUserByEmail(@RequestParam @Email(message = "Invalid email format") String email) {
         return userService.getUserByEmail(email);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create user")
     public UserResponse createUser(@Valid @RequestBody UserCreateRequest request) {
         return userService.createUser(request);
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update user")
     public UserResponse updateUser(
             @PathVariable @Positive(message = "User ID must be positive") Long id,
             @Valid @RequestBody UserCreateRequest request) {
@@ -61,6 +69,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/status")
+    @Operation(summary = "Update user status")
     public void updateUserStatus(
             @PathVariable @Positive(message = "User ID must be positive") Long id,
             @RequestParam UserStatus status) {
@@ -69,6 +78,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete user")
     public void deleteUser(@PathVariable @Positive(message = "User ID must be positive") Long id) {
         userService.deleteUser(id);
     }
