@@ -2,6 +2,7 @@ package com.example.carsharing.service;
 
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
+import com.example.carsharing.exception.ConflictException;
 import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.CarStatus;
@@ -334,7 +335,7 @@ public class RentalService {
         }
 
         if (rentalRepository.existsByUserIdAndEndTimeIsNull(user.getId())) {
-            throw new InvalidDataAccessApiUsageException(
+            throw new ConflictException(
                     "User already has an active rental. Complete it first.");
         }
 
@@ -342,7 +343,7 @@ public class RentalService {
                 .orElseThrow(() -> new NotFoundException("Car not found with id: " + request.getCarId()));
 
         if (car.getStatus() != CarStatus.AVAILABLE) {
-            throw new InvalidDataAccessApiUsageException("Car is not available. Status: " + car.getStatus());
+            throw new ConflictException("Car is not available. Status: " + car.getStatus());
         }
 
         if (rentalRepository.existsByCarIdAndEndTimeIsNull(car.getId())) {
