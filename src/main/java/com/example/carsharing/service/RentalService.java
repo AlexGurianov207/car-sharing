@@ -1,5 +1,6 @@
 package com.example.carsharing.service;
 
+import com.example.carsharing.dto.BulkRentalResponse;
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
 import com.example.carsharing.exception.ConflictException;
@@ -327,6 +328,36 @@ public class RentalService {
 
     @Transactional
     public RentalResponse createRental(RentalCreateRequest request) {
+        return createRentalInternal(request);
+    }
+
+    public BulkRentalResponse createRentalsBulk(List<RentalCreateRequest> requests) {
+        validateBulkRequests(requests);
+
+        List<RentalResponse> createdRentals = requests.stream()
+                .map(this::createRentalInternal)
+                .toList();
+
+        BulkRentalResponse response = new BulkRentalResponse();
+        response.setRequestedCount(requests.size());
+        response.setCreatedCount(createdRentals.size());
+        response.setRentals(createdRentals);
+        return response;
+    }
+
+    private void validateBulkRequests(List<RentalCreateRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new InvalidDataAccessApiUsageException("Bulk request must contain at least one rental");
+        }
+        if (requests.size() > 100) {
+            throw new IllegalArgumentException("Bulk request size exceeds limit: 100");
+        }
+        if (requests.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("Bulk request contains null item");
+        }
+    }
+
+    private RentalResponse createRentalInternal(RentalCreateRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + request.getUserId()));
 

@@ -1,5 +1,6 @@
 package com.example.carsharing.controller;
 
+import com.example.carsharing.dto.BulkRentalResponse;
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
 import com.example.carsharing.model.RentalStatus;
@@ -7,6 +8,7 @@ import com.example.carsharing.service.RentalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -92,6 +94,15 @@ public class RentalController {
     @Operation(summary = "Create rental")
     public RentalResponse createRental(@Valid @RequestBody RentalCreateRequest request) {
         return rentalService.createRental(request);
+    }
+
+    @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create rentals in bulk")
+    public BulkRentalResponse createRentalsBulk(
+            @RequestBody @NotEmpty(message = "Rentals list cannot be empty")
+            List<@Valid RentalCreateRequest> requests) {
+        return rentalService.createRentalsBulk(requests);
     }
 
     @PatchMapping("/{id}/complete")
