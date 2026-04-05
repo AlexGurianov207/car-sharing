@@ -23,15 +23,11 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Make Maven wrapper executable
-        run: chmod +x mvnw
-
       - name: Build, test and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           ./mvnw -B clean verify sonar:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=YOUR_ORG_KEY \
-            -Dsonar.projectKey=YOUR_PROJECT_KEY
-
+            -Dsonar.organization=alexgurianov207 \
+            -Dsonar.projectKey=AlexGurianov207_car-sharing
