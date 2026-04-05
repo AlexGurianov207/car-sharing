@@ -14,6 +14,8 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -81,20 +83,21 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (newStatus != UserStatus.ACTIVE && newStatus != UserStatus.BLOCKED) {
-            throw new IllegalArgumentException("Status can only be changed to ACTIVE or BLOCKED");
-        }
+        Set<UserStatus> allowedStatuses = Set.of(UserStatus.ACTIVE, UserStatus.BLOCKED);
+        UserStatus validatedStatus = Optional.ofNullable(newStatus)
+                .filter(allowedStatuses::contains)
+                .orElseThrow(() -> new IllegalArgumentException("Status can only be changed to ACTIVE or BLOCKED"));
 
         if (user.getStatus() == UserStatus.DELETED) {
             throw new InvalidDataAccessApiUsageException("Cannot change status of deleted user");
         }
 
-        if (newStatus == UserStatus.BLOCKED && rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
+        if (validatedStatus == UserStatus.BLOCKED && rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
             throw new InvalidDataAccessApiUsageException(
                     "Cannot block user with active rental");
         }
 
-        user.setStatus(newStatus);
+        user.setStatus(validatedStatus);
         userRepository.save(user);
     }
 
@@ -107,9 +110,7 @@ public class UserService {
             return;
         }
 
-        boolean hasActiveRentals = rentalRepository.existsByUserIdAndEndTimeIsNull(id);
-
-        if (hasActiveRentals) {
+        if (rentalRepository.existsByUserIdAndEndTimeIsNull(id)) {
             throw new InvalidDataAccessApiUsageException(
                     "Cannot delete user with active rentals. Complete or cancel rentals first.");
         }

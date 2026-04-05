@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -45,9 +46,11 @@ public class PaymentService {
             throw new DataIntegrityViolationException("Payment already exists for rental: " + request.getRentalId());
         }
 
-        if (request.getTransactionId() == null || request.getTransactionId().isEmpty()) {
-            request.setTransactionId("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        }
+        String transactionId = Optional.ofNullable(request.getTransactionId())
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .orElseGet(() -> "TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        request.setTransactionId(transactionId);
 
         Payment payment = paymentMapper.toEntity(request, rental);
 
@@ -58,12 +61,11 @@ public class PaymentService {
         long days = hours / 24 + (hours % 24 == 0 ? 0 : 1);
 
         double carPrice = rental.getCar().getPricePerHour() * hours;
-        double servicesPrice = 0.0;
-        if (rental.getSelectedServices() != null) {
-            servicesPrice = rental.getSelectedServices().stream()
-                    .mapToDouble(s -> s.getPricePerDay() * days)
-                    .sum();
-        }
+        double servicesPrice = Optional.ofNullable(rental.getSelectedServices())
+                .orElseGet(List::of)
+                .stream()
+                .mapToDouble(s -> s.getPricePerDay() * days)
+                .sum();
 
         payment.setCarAmount(carPrice);
         payment.setServicesAmount(servicesPrice);
@@ -104,11 +106,10 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException(PAYMENT_NOT_FOUND_MESSAGE + id));
 
-        Rental rental = payment.getRental();
-        if (rental != null) {
-            rental.setPayment(null);
-            rentalRepository.save(rental);
-        }
+        Optional.ofNullable(payment.getRental()).ifPresent(linkedRental -> {
+            linkedRental.setPayment(null);
+            rentalRepository.save(linkedRental);
+        });
 
         paymentRepository.delete(payment);
     }

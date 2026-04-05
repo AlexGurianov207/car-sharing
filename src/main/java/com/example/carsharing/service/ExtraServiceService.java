@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,15 +47,11 @@ public class ExtraServiceService {
     }
 
     public List<ExtraServiceResponse> getAllServices(ServiceCategory category, Boolean onlyActive) {
-        List<ExtraService> services;
-
-        if (category != null) {
-            services = extraServiceRepository.findByCategory(category);
-        } else if (onlyActive != null && onlyActive) {
-            services = extraServiceRepository.findByIsActiveTrue();
-        } else {
-            services = extraServiceRepository.findAll();
-        }
+        List<ExtraService> services = Optional.ofNullable(category)
+                .map(extraServiceRepository::findByCategory)
+                .orElseGet(() -> Boolean.TRUE.equals(onlyActive)
+                        ? extraServiceRepository.findByIsActiveTrue()
+                        : extraServiceRepository.findAll());
 
         return services.stream()
                 .map(extraServiceMapper::toResponse)

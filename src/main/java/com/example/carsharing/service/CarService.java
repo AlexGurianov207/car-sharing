@@ -17,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -69,12 +72,9 @@ public class CarService {
     }
 
     public List<CarResponse> findAll(CarStatus status) {
-        List<Car> cars;
-        if (status != null) {
-            cars = carRepository.findByStatus(status);
-        } else {
-            cars = carRepository.findAll();
-        }
+        List<Car> cars = Optional.ofNullable(status)
+                .map(carRepository::findByStatus)
+                .orElseGet(carRepository::findAll);
 
         return cars.stream()
                 .map(carMapper::toResponse)
@@ -153,11 +153,23 @@ public class CarService {
         }
 
         checkNotRented(carId, car);
+        if (serviceIds == null || serviceIds.isEmpty()) {
+            throw new InvalidDataAccessApiUsageException("Service IDs list cannot be empty");
+        }
+        if (serviceIds.stream().anyMatch(Objects::isNull)) {
+            throw new InvalidDataAccessApiUsageException("Service IDs list cannot contain null values");
+        }
 
         List<ExtraService> services = extraServiceRepository.findAllById(serviceIds);
-
-        if (services.size() != serviceIds.size()) {
-            throw new DataIntegrityViolationException("Some services not found");
+        Set<Long> foundIds = services.stream()
+                .map(ExtraService::getId)
+                .collect(Collectors.toSet());
+        List<Long> missingServiceIds = serviceIds.stream()
+                .distinct()
+                .filter(id -> !foundIds.contains(id))
+                .toList();
+        if (!missingServiceIds.isEmpty()) {
+            throw new DataIntegrityViolationException("Services not found with ids: " + missingServiceIds);
         }
 
         List<ExtraService> inactiveServices = services.stream()
