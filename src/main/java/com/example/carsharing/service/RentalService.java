@@ -333,11 +333,36 @@ public class RentalService {
     }
 
     public BulkRentalResponse createRentalsBulk(List<RentalCreateRequest> requests) {
+        return createRentalsBulkWithTransaction(requests);
+    }
+
+    public BulkRentalResponse createRentalsBulkWithoutTransaction(List<RentalCreateRequest> requests) {
         List<RentalCreateRequest> validRequests = validateBulkRequests(requests);
+        log.info("[BULK][NO_TX] Processing {} rental requests", validRequests.size());
 
         List<RentalResponse> createdRentals = validRequests.stream()
                 .map(this::createRentalInternal)
                 .toList();
+
+        log.info("[BULK][NO_TX] Successfully created {} rentals", createdRentals.size());
+
+        BulkRentalResponse response = new BulkRentalResponse();
+        response.setRequestedCount(validRequests.size());
+        response.setCreatedCount(createdRentals.size());
+        response.setRentals(createdRentals);
+        return response;
+    }
+
+    @Transactional
+    public BulkRentalResponse createRentalsBulkWithTransaction(List<RentalCreateRequest> requests) {
+        List<RentalCreateRequest> validRequests = validateBulkRequests(requests);
+        log.info("[BULK][TX] Processing {} rental requests", validRequests.size());
+
+        List<RentalResponse> createdRentals = validRequests.stream()
+                .map(this::createRentalInternal)
+                .toList();
+
+        log.info("[BULK][TX] Successfully created {} rentals in one transaction", createdRentals.size());
 
         BulkRentalResponse response = new BulkRentalResponse();
         response.setRequestedCount(validRequests.size());

@@ -105,6 +105,24 @@ public class RentalController {
         return rentalService.createRentalsBulk(requests);
     }
 
+    @PostMapping("/bulk/demo/without-tx")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create rentals in bulk without transaction (demo)")
+    public BulkRentalResponse createRentalsBulkWithoutTransaction(
+            @RequestBody @NotEmpty(message = "Rentals list cannot be empty")
+            List<@Valid RentalCreateRequest> requests) {
+        return rentalService.createRentalsBulkWithoutTransaction(requests);
+    }
+
+    @PostMapping("/bulk/demo/with-tx")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create rentals in bulk with transaction (demo)")
+    public BulkRentalResponse createRentalsBulkWithTransaction(
+            @RequestBody @NotEmpty(message = "Rentals list cannot be empty")
+            List<@Valid RentalCreateRequest> requests) {
+        return rentalService.createRentalsBulkWithTransaction(requests);
+    }
+
     @PatchMapping("/{id}/complete")
     @Operation(summary = "Complete rental")
     public RentalResponse completeRental(@PathVariable @Positive(message = "Rental ID must be positive") Long id) {
