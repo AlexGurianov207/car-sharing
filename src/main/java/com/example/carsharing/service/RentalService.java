@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -332,29 +333,32 @@ public class RentalService {
     }
 
     public BulkRentalResponse createRentalsBulk(List<RentalCreateRequest> requests) {
-        validateBulkRequests(requests);
+        List<RentalCreateRequest> validRequests = validateBulkRequests(requests);
 
-        List<RentalResponse> createdRentals = requests.stream()
+        List<RentalResponse> createdRentals = validRequests.stream()
                 .map(this::createRentalInternal)
                 .toList();
 
         BulkRentalResponse response = new BulkRentalResponse();
-        response.setRequestedCount(requests.size());
+        response.setRequestedCount(validRequests.size());
         response.setCreatedCount(createdRentals.size());
         response.setRentals(createdRentals);
         return response;
     }
 
-    private void validateBulkRequests(List<RentalCreateRequest> requests) {
-        if (requests == null || requests.isEmpty()) {
-            throw new InvalidDataAccessApiUsageException("Bulk request must contain at least one rental");
-        }
-        if (requests.size() > 100) {
+    private List<RentalCreateRequest> validateBulkRequests(List<RentalCreateRequest> requests) {
+        List<RentalCreateRequest> validRequests = Optional.ofNullable(requests)
+                .filter(list -> !list.isEmpty())
+                .orElseThrow(() -> new InvalidDataAccessApiUsageException(
+                        "Bulk request must contain at least one rental"));
+
+        if (validRequests.size() > 100) {
             throw new IllegalArgumentException("Bulk request size exceeds limit: 100");
         }
-        if (requests.stream().anyMatch(Objects::isNull)) {
+        if (validRequests.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("Bulk request contains null item");
         }
+        return validRequests;
     }
 
     private RentalResponse createRentalInternal(RentalCreateRequest request) {
@@ -383,17 +387,13 @@ public class RentalService {
 
         Rental rental = rentalMapper.toEntity(user, car);
 
-        if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
-            List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
-            if (services.size() != request.getServiceIds().size()) {
-                throw new NoSuchElementException("Some services not found");
-            }
-            for (ExtraService service : services) {
-                if (!car.getAvailableServices().contains(service)) {
-                    throw new InvalidDataAccessApiUsageException("Service " + service.getName() +
-                            " is not available for this car");
-                }
-            }
+        List<Long> requestedServiceIds = Optional.ofNullable(request.getServiceIds())
+                .orElseGet(List::of);
+
+        if (!requestedServiceIds.isEmpty()) {
+            List<ExtraService> services = extraServiceRepository.findAllById(requestedServiceIds);
+            validateAllRequestedServicesFound(requestedServiceIds, services);
+            validateServicesAvailableForCar(car, services);
             rental.setSelectedServices(services);
         }
 
@@ -404,6 +404,38 @@ public class RentalService {
         invalidateSearchIndex();
 
         return rentalMapper.toResponse(savedRental);
+    }
+
+    private void validateAllRequestedServicesFound(
+            List<Long> requestedServiceIds,
+            List<ExtraService> foundServices
+    ) {
+        List<Long> foundIds = foundServices.stream()
+                .map(ExtraService::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        List<Long> missingServiceIds = requestedServiceIds.stream()
+                .distinct()
+                .filter(serviceId -> !foundIds.contains(serviceId))
+                .toList();
+
+        if (!missingServiceIds.isEmpty()) {
+            throw new NoSuchElementException("Services not found with ids: " + missingServiceIds);
+        }
+    }
+
+    private void validateServicesAvailableForCar(Car car, List<ExtraService> services) {
+        List<String> unavailableServiceNames = services.stream()
+                .filter(service -> !car.getAvailableServices().contains(service))
+                .map(ExtraService::getName)
+                .distinct()
+                .toList();
+
+        if (!unavailableServiceNames.isEmpty()) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Services not available for this car: " + String.join(", ", unavailableServiceNames));
+        }
     }
 
     @Transactional
