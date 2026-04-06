@@ -7,6 +7,7 @@ import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.CarStatus;
 import com.example.carsharing.model.ExtraService;
+import com.example.carsharing.model.PaymentStatus;
 import com.example.carsharing.model.Rental;
 import com.example.carsharing.model.RentalStatus;
 import com.example.carsharing.model.User;
@@ -519,6 +520,208 @@ class RentalServiceTest {
         verify(paymentRepository, never()).save(org.mockito.ArgumentMatchers.any());
         verify(rentalRepository).delete(rental);
     }
+    @Test
+    void createRentalWithoutTransaction_whenServiceIdsNull_shouldSkipServicesCheck() {
+        RentalCreateRequest request = createRequest(1L, 1L, null);
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(104L);
+        RentalResponse expected = new RentalResponse();
+        expected.setId(104L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalMapper.toResponse(savedRental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.createRentalWithoutTransaction(request);
+
+        assertEquals(expected, actual);
+        verify(extraServiceRepository, never()).findAllById(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void createRentalWithTransaction_whenServiceIdsNull_shouldSkipServicesCheck() {
+        RentalCreateRequest request = createRequest(1L, 1L, null);
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(204L);
+        RentalResponse expected = new RentalResponse();
+        expected.setId(204L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalMapper.toResponse(savedRental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.createRentalWithTransaction(request);
+
+        assertEquals(expected, actual);
+        verify(extraServiceRepository, never()).findAllById(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void getRentalById_whenMissing_shouldThrow() {
+        when(rentalRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> rentalService.getRentalById(1L));
+    }
+
+    @Test
+    void getRentalById_whenFound_shouldReturnMappedResponse() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        RentalResponse expected = new RentalResponse();
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+        when(rentalMapper.toResponse(rental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.getRentalById(1L);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void getUserRentals_whenUserMissing_shouldThrow() {
+        when(userRepository.existsById(1L)).thenReturn(false);
+
+        assertThrows(java.util.NoSuchElementException.class, () -> rentalService.getUserRentals(1L));
+    }
+
+    @Test
+    void getUserRentals_whenEmpty_shouldThrow() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+        when(rentalRepository.findByUserId(1L)).thenReturn(List.of());
+
+        assertThrows(java.util.NoSuchElementException.class, () -> rentalService.getUserRentals(1L));
+    }
+
+    @Test
+    void getUserRentals_whenFound_shouldMapAll() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        RentalResponse response = new RentalResponse();
+        when(userRepository.existsById(1L)).thenReturn(true);
+        when(rentalRepository.findByUserId(1L)).thenReturn(List.of(rental));
+        when(rentalMapper.toResponse(rental)).thenReturn(response);
+
+        List<RentalResponse> result = rentalService.getUserRentals(1L);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void getCarRentals_whenCarMissing_shouldThrow() {
+        when(carRepository.existsById(1L)).thenReturn(false);
+
+        assertThrows(java.util.NoSuchElementException.class, () -> rentalService.getCarRentals(1L));
+    }
+
+    @Test
+    void getCarRentals_whenEmpty_shouldThrow() {
+        when(carRepository.existsById(1L)).thenReturn(true);
+        when(rentalRepository.findByCarId(1L)).thenReturn(List.of());
+
+        assertThrows(java.util.NoSuchElementException.class, () -> rentalService.getCarRentals(1L));
+    }
+
+    @Test
+    void getCarRentals_whenFound_shouldMapAll() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        RentalResponse response = new RentalResponse();
+        when(carRepository.existsById(1L)).thenReturn(true);
+        when(rentalRepository.findByCarId(1L)).thenReturn(List.of(rental));
+        when(rentalMapper.toResponse(rental)).thenReturn(response);
+
+        List<RentalResponse> result = rentalService.getCarRentals(1L);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void getActiveRentals_whenEmpty_shouldThrow() {
+        when(rentalRepository.findActiveRentalIds()).thenReturn(List.of());
+
+        assertThrows(java.util.NoSuchElementException.class, () -> rentalService.getActiveRentals());
+    }
+
+    @Test
+    void getActiveRentals_whenFound_shouldMapInIdOrder() {
+        Rental r1 = baseRental(activeUser(1L), availableCar(1L));
+        r1.setId(10L);
+        Rental r2 = baseRental(activeUser(2L), availableCar(2L));
+        r2.setId(20L);
+        RentalResponse resp1 = new RentalResponse();
+        resp1.setId(10L);
+        RentalResponse resp2 = new RentalResponse();
+        resp2.setId(20L);
+
+        when(rentalRepository.findActiveRentalIds()).thenReturn(List.of(10L, 20L));
+        when(rentalRepository.findAllWithDetailsByIdIn(List.of(10L, 20L))).thenReturn(List.of(r1, r2));
+        when(rentalMapper.toResponse(r1)).thenReturn(resp1);
+        when(rentalMapper.toResponse(r2)).thenReturn(resp2);
+
+        List<RentalResponse> result = rentalService.getActiveRentals();
+
+        assertEquals(2, result.size());
+        assertEquals(10L, result.get(0).getId());
+        assertEquals(20L, result.get(1).getId());
+    }
+
+    @Test
+    void completeRental_whenMissing_shouldThrow() {
+        when(rentalRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> rentalService.completeRental(1L));
+    }
+
+    @Test
+    void completeRental_whenNotActive_shouldThrow() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        rental.setStatus(RentalStatus.COMPLETED);
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+
+        assertThrows(InvalidDataAccessApiUsageException.class, () -> rentalService.completeRental(1L));
+    }
+
+    @Test
+    void completeRental_whenBeforeStart_shouldThrow() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        rental.setStatus(RentalStatus.ACTIVE);
+        rental.setStartTime(java.time.LocalDateTime.now().plusHours(1));
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+
+        assertThrows(InvalidDataAccessApiUsageException.class, () -> rentalService.completeRental(1L));
+    }
+
+    @Test
+    void completeRental_whenValid_shouldCompleteAndReturnResponse() {
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        ExtraService service = new ExtraService();
+        service.setName("GPS");
+        service.setPricePerDay(5.0);
+
+        Rental rental = baseRental(user, car);
+        rental.setStatus(RentalStatus.ACTIVE);
+        rental.setStartTime(java.time.LocalDateTime.now().minusHours(2));
+        rental.setSelectedServices(List.of(service));
+
+        RentalResponse expected = new RentalResponse();
+
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalRepository.save(rental)).thenReturn(rental);
+        when(rentalMapper.toResponse(rental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.completeRental(1L);
+
+        assertEquals(expected, actual);
+        assertEquals(RentalStatus.COMPLETED, rental.getStatus());
+        assertEquals(CarStatus.AVAILABLE, car.getStatus());
+        assertEquals(PaymentStatus.COMPLETED, rental.getPayment().getStatus());
+    }
     private RentalCreateRequest createRequest(Long userId, Long carId, List<Long> serviceIds) {
         RentalCreateRequest request = new RentalCreateRequest();
         request.setUserId(userId);
@@ -555,6 +758,3 @@ class RentalServiceTest {
         return rental;
     }
 }
-
-
-
