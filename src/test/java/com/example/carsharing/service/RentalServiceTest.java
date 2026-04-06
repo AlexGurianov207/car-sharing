@@ -722,6 +722,225 @@ class RentalServiceTest {
         assertEquals(CarStatus.AVAILABLE, car.getStatus());
         assertEquals(PaymentStatus.COMPLETED, rental.getPayment().getStatus());
     }
+
+    @Test
+    void createRental_whenUserHasActiveRental_shouldThrowConflict() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of());
+        User user = activeUser(1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(rentalRepository.existsByUserIdAndEndTimeIsNull(1L)).thenReturn(true);
+
+        assertThrows(com.example.carsharing.exception.ConflictException.class,
+                () -> rentalService.createRental(request));
+    }
+
+    @Test
+    void createRental_whenCarStatusNotAvailable_shouldThrowConflict() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of());
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        car.setStatus(CarStatus.RENTED);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(rentalRepository.existsByUserIdAndEndTimeIsNull(1L)).thenReturn(false);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+
+        assertThrows(com.example.carsharing.exception.ConflictException.class,
+                () -> rentalService.createRental(request));
+    }
+
+    @Test
+    void createRental_whenValidWithServices_shouldAssignAndReturnResponse() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of(10L, 11L));
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+
+        ExtraService gps = new ExtraService();
+        gps.setId(10L);
+        gps.setName("GPS");
+        ExtraService childSeat = new ExtraService();
+        childSeat.setId(11L);
+        childSeat.setName("Child seat");
+        car.setAvailableServices(List.of(gps, childSeat));
+
+        Rental rental = baseRental(user, car);
+        rental.setId(333L);
+        RentalResponse expected = new RentalResponse();
+        expected.setId(333L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(rentalRepository.existsByUserIdAndEndTimeIsNull(1L)).thenReturn(false);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.existsByCarIdAndEndTimeIsNull(1L)).thenReturn(false);
+        when(extraServiceRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(gps, childSeat));
+        when(rentalMapper.toEntity(user, car)).thenReturn(rental);
+        when(rentalRepository.save(rental)).thenReturn(rental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalMapper.toResponse(rental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.createRental(request);
+
+        assertEquals(expected, actual);
+        assertEquals(2, rental.getSelectedServices().size());
+        verify(extraServiceRepository).findAllById(List.of(10L, 11L));
+    }
+
+    @Test
+    void createRentalsBulkWithoutTransaction_whenAllValid_shouldReturnCounts() {
+        RentalCreateRequest first = createRequest(1L, 1L, List.of());
+        RentalCreateRequest second = createRequest(2L, 2L, List.of());
+
+        User user1 = activeUser(1L);
+        User user2 = activeUser(2L);
+        Car car1 = availableCar(1L);
+        Car car2 = availableCar(2L);
+
+        Rental rental1 = baseRental(user1, car1);
+        rental1.setId(801L);
+        Rental rental2 = baseRental(user2, car2);
+        rental2.setId(802L);
+
+        RentalResponse response1 = new RentalResponse();
+        response1.setId(801L);
+        RentalResponse response2 = new RentalResponse();
+        response2.setId(802L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user1));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user2));
+        when(rentalRepository.existsByUserIdAndEndTimeIsNull(1L)).thenReturn(false);
+        when(rentalRepository.existsByUserIdAndEndTimeIsNull(2L)).thenReturn(false);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car1));
+        when(carRepository.findById(2L)).thenReturn(Optional.of(car2));
+        when(rentalRepository.existsByCarIdAndEndTimeIsNull(1L)).thenReturn(false);
+        when(rentalRepository.existsByCarIdAndEndTimeIsNull(2L)).thenReturn(false);
+        when(rentalMapper.toEntity(user1, car1)).thenReturn(rental1);
+        when(rentalMapper.toEntity(user2, car2)).thenReturn(rental2);
+        when(rentalRepository.save(rental1)).thenReturn(rental1);
+        when(rentalRepository.save(rental2)).thenReturn(rental2);
+        when(carRepository.save(car1)).thenReturn(car1);
+        when(carRepository.save(car2)).thenReturn(car2);
+        when(rentalMapper.toResponse(rental1)).thenReturn(response1);
+        when(rentalMapper.toResponse(rental2)).thenReturn(response2);
+
+        BulkRentalResponse result = rentalService.createRentalsBulkWithoutTransaction(List.of(first, second));
+
+        assertEquals(2, result.getRequestedCount());
+        assertEquals(2, result.getCreatedCount());
+        assertEquals(2, result.getRentals().size());
+    }
+
+    @Test
+    void createRentalsBulk_shouldDelegateToTransactionalVersion() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of());
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        Rental rental = baseRental(user, car);
+        rental.setId(900L);
+        RentalResponse response = new RentalResponse();
+        response.setId(900L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(rentalRepository.existsByUserIdAndEndTimeIsNull(1L)).thenReturn(false);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.existsByCarIdAndEndTimeIsNull(1L)).thenReturn(false);
+        when(rentalMapper.toEntity(user, car)).thenReturn(rental);
+        when(rentalRepository.save(rental)).thenReturn(rental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalMapper.toResponse(rental)).thenReturn(response);
+
+        BulkRentalResponse result = rentalService.createRentalsBulk(List.of(request));
+
+        assertEquals(1, result.getRequestedCount());
+        assertEquals(1, result.getCreatedCount());
+        assertEquals(1, result.getRentals().size());
+    }
+
+    @Test
+    void completeRental_whenDurationLessThanHour_shouldRoundUpToOneHourAndOneDay() {
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        car.setPricePerHour(10.0);
+
+        ExtraService service = new ExtraService();
+        service.setName("GPS");
+        service.setPricePerDay(3.0);
+
+        Rental rental = baseRental(user, car);
+        rental.setStatus(RentalStatus.ACTIVE);
+        rental.setStartTime(java.time.LocalDateTime.now().minusMinutes(10));
+        rental.setSelectedServices(List.of(service));
+
+        RentalResponse expected = new RentalResponse();
+
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalRepository.save(rental)).thenReturn(rental);
+        when(rentalMapper.toResponse(rental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.completeRental(1L);
+
+        assertEquals(expected, actual);
+        assertEquals(13.0, rental.getPayment().getAmount());
+        assertEquals(10.0, rental.getPayment().getCarAmount());
+        assertEquals(3.0, rental.getPayment().getServicesAmount());
+        assertEquals("GPS", rental.getServiceNames());
+    }
+
+    @Test
+    void completeRental_whenNoSelectedServices_shouldSkipServiceNamesAndServiceCost() {
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        car.setPricePerHour(10.0);
+
+        Rental rental = baseRental(user, car);
+        rental.setStatus(RentalStatus.ACTIVE);
+        rental.setStartTime(java.time.LocalDateTime.now().minusHours(1));
+        rental.setSelectedServices(List.of());
+
+        RentalResponse expected = new RentalResponse();
+
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalRepository.save(rental)).thenReturn(rental);
+        when(rentalMapper.toResponse(rental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.completeRental(1L);
+
+        assertEquals(expected, actual);
+        assertEquals(10.0, rental.getPayment().getAmount());
+        assertEquals(0.0, rental.getPayment().getServicesAmount());
+    }
+
+    @Test
+    void searchRentalsJpql_whenBrandHasSpacesAndDifferentCase_shouldNormalizeAndUseCache() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        rental.setId(1001L);
+        RentalResponse response = new RentalResponse();
+        response.setId(1001L);
+
+        when(rentalRepository.searchByFiltersJpqlNoPageFetch("toyota", false, -1L, false, RentalStatus.ACTIVE))
+                .thenReturn(List.of(rental));
+        when(rentalMapper.toResponse(rental)).thenReturn(response);
+
+        List<RentalResponse> first = rentalService.searchRentalsJpql("  TOYOTA  ", null, null);
+        List<RentalResponse> second = rentalService.searchRentalsJpql("toyota", null, null);
+
+        assertEquals(1, first.size());
+        assertEquals(1, second.size());
+        verify(rentalRepository, org.mockito.Mockito.times(1))
+                .searchByFiltersJpqlNoPageFetch("toyota", false, -1L, false, RentalStatus.ACTIVE);
+    }
+
+    @Test
+    void mapIdsToResponses_whenIdsEmpty_shouldReturnEmptyList() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod("mapIdsToResponses", List.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        List<RentalResponse> result = (List<RentalResponse>) method.invoke(rentalService, List.of());
+
+        assertEquals(List.of(), result);
+    }
     private RentalCreateRequest createRequest(Long userId, Long carId, List<Long> serviceIds) {
         RentalCreateRequest request = new RentalCreateRequest();
         request.setUserId(userId);
