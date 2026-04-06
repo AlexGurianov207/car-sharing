@@ -941,6 +941,168 @@ class RentalServiceTest {
 
         assertEquals(List.of(), result);
     }
+
+        @Test
+    void searchRentalsNative_whenMinimalFilters_shouldMapLiveFields() {
+        RentalRepository.RentalNativeSearchProjection row = org.mockito.Mockito.mock(
+                RentalRepository.RentalNativeSearchProjection.class);
+        when(row.getId()).thenReturn(1L);
+        when(row.getUserId()).thenReturn(10L);
+        when(row.getCarId()).thenReturn(20L);
+        when(row.getStartTime()).thenReturn(java.time.LocalDateTime.now().minusHours(2));
+        when(row.getEndTime()).thenReturn(null);
+        when(row.getStatus()).thenReturn("ACTIVE");
+        when(row.getUserFirstName()).thenReturn("Ivan");
+        when(row.getUserLastName()).thenReturn("Petrov");
+        when(row.getCarBrand()).thenReturn("Toyota");
+        when(row.getCarModel()).thenReturn("Camry");
+        when(row.getCarLicensePlate()).thenReturn("1234-AA");
+        when(row.getSelectedServiceNames()).thenReturn("GPS; WiFi, Child Seat");
+
+        when(rentalRepository.searchByFiltersNativeNoPage("", false, -1L, false, "ACTIVE"))
+                .thenReturn(List.of(row));
+
+        List<RentalResponse> result = rentalService.searchRentalsNative(null, null, null);
+
+        assertEquals(1, result.size());
+        assertEquals("Ivan Petrov", result.get(0).getUserFullName());
+        assertEquals("Toyota Camry (1234-AA)", result.get(0).getCarInfo());
+        assertEquals(List.of("GPS", "WiFi", "Child Seat"), result.get(0).getSelectedServices());
+    }
+
+        @Test
+    void searchRentalsNative_whenCompleted_shouldPreferSnapshots() {
+        RentalRepository.RentalNativeSearchProjection row = org.mockito.Mockito.mock(
+                RentalRepository.RentalNativeSearchProjection.class);
+        when(row.getId()).thenReturn(2L);
+        when(row.getUserId()).thenReturn(11L);
+        when(row.getCarId()).thenReturn(21L);
+        when(row.getStartTime()).thenReturn(java.time.LocalDateTime.now().minusHours(3));
+        when(row.getEndTime()).thenReturn(java.time.LocalDateTime.now().minusHours(1));
+        when(row.getStatus()).thenReturn("COMPLETED");
+        when(row.getUserFullNameSnapshot()).thenReturn("Snapshot User");
+        when(row.getCarInfoSnapshot()).thenReturn("Snapshot Car");
+        when(row.getServiceNamesSnapshot()).thenReturn("Snap1;Snap2");
+
+        when(rentalRepository.searchByFiltersNativeNoPage("", false, -1L, false, "ACTIVE"))
+                .thenReturn(List.of(row));
+
+        List<RentalResponse> result = rentalService.searchRentalsNative("   ", null, null);
+
+        assertEquals(1, result.size());
+        assertEquals("Snapshot User", result.get(0).getUserFullName());
+        assertEquals("Snapshot Car", result.get(0).getCarInfo());
+        assertEquals(List.of("Snap1", "Snap2"), result.get(0).getSelectedServices());
+    }
+
+    @Test
+    void searchRentalsJpql_whenUserAndStatusProvided_shouldPassFlags() {
+        Rental rental = baseRental(activeUser(7L), availableCar(8L));
+        RentalResponse mapped = new RentalResponse();
+        mapped.setId(707L);
+
+        when(rentalRepository.searchByFiltersJpqlNoPageFetch("bmw", true, 7L, true, RentalStatus.COMPLETED))
+                .thenReturn(List.of(rental));
+        when(rentalMapper.toResponse(rental)).thenReturn(mapped);
+
+        List<RentalResponse> result = rentalService.searchRentalsJpql(" BMW ", 7L, RentalStatus.COMPLETED);
+
+        assertEquals(1, result.size());
+        verify(rentalRepository).searchByFiltersJpqlNoPageFetch("bmw", true, 7L, true, RentalStatus.COMPLETED);
+    }
+
+        @Test
+    void searchRentalsNative_whenUserAndStatusProvided_shouldPassFlags() {
+        RentalRepository.RentalNativeSearchProjection row = org.mockito.Mockito.mock(
+                RentalRepository.RentalNativeSearchProjection.class);
+        when(row.getId()).thenReturn(3L);
+        when(row.getUserId()).thenReturn(7L);
+        when(row.getCarId()).thenReturn(8L);
+        when(row.getStartTime()).thenReturn(java.time.LocalDateTime.now().minusHours(1));
+        when(row.getEndTime()).thenReturn(null);
+        when(row.getStatus()).thenReturn("COMPLETED");
+        when(row.getUserFullNameSnapshot()).thenReturn("A B");
+        when(row.getCarInfoSnapshot()).thenReturn("BMW X5");
+        when(row.getServiceNamesSnapshot()).thenReturn("GPS");
+
+        when(rentalRepository.searchByFiltersNativeNoPage("bmw", true, 7L, true, "COMPLETED"))
+                .thenReturn(List.of(row));
+
+        List<RentalResponse> result = rentalService.searchRentalsNative("BMW", 7L, RentalStatus.COMPLETED);
+
+        assertEquals(1, result.size());
+        verify(rentalRepository).searchByFiltersNativeNoPage("bmw", true, 7L, true, "COMPLETED");
+    }
+
+    @Test
+    void getRentalsPage_shouldMapRepositoryPage() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        RentalResponse mapped = new RentalResponse();
+        mapped.setId(5000L);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+
+        when(rentalRepository.findAllBy(pageable)).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(rental)));
+        when(rentalMapper.toResponse(rental)).thenReturn(mapped);
+
+        org.springframework.data.domain.Page<RentalResponse> page = rentalService.getRentalsPage(pageable);
+
+        assertEquals(1, page.getContent().size());
+        assertEquals(5000L, page.getContent().get(0).getId());
+    }
+
+    @Test
+    void normalize_shouldHandleNullBlankAndTrimmedValues() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod("normalize", String.class);
+        method.setAccessible(true);
+
+        assertEquals("", method.invoke(rentalService, new Object[]{null}));
+        assertEquals("", method.invoke(rentalService, "   "));
+        assertEquals("toyota", method.invoke(rentalService, "  ToYoTa  "));
+    }
+
+    @Test
+    void putToIndex_whenKeyAlreadyExists_shouldReturnPreviousAndUpdate() throws Exception {
+        Class<?> queryTypeClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
+                .filter(Class::isEnum)
+                .filter(c -> c.getSimpleName().equals("QueryType"))
+                .findFirst()
+                .orElseThrow();
+
+        Object jpql = queryTypeClass.getEnumConstants()[0];
+
+        Class<?> keyClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
+                .filter(c -> c.getSimpleName().equals("RentalSearchCacheKey"))
+                .findFirst()
+                .orElseThrow();
+
+        java.lang.reflect.Constructor<?> ctor = keyClass.getDeclaredConstructor(
+                String.class,
+                Long.class,
+                RentalStatus.class,
+                int.class,
+                int.class,
+                String.class,
+                queryTypeClass
+        );
+        ctor.setAccessible(true);
+        Object key = ctor.newInstance("toyota", null, null, 0, -1, "LIST[startTime,DESC]", jpql);
+
+        java.lang.reflect.Method putMethod = RentalService.class.getDeclaredMethod(
+                "putToIndex",
+                keyClass,
+                org.springframework.data.domain.Page.class
+        );
+        putMethod.setAccessible(true);
+
+        org.springframework.data.domain.Page<RentalResponse> first = new org.springframework.data.domain.PageImpl<>(List.of(new RentalResponse()));
+        org.springframework.data.domain.Page<RentalResponse> second = new org.springframework.data.domain.PageImpl<>(List.of(new RentalResponse()));
+
+        Object prev1 = putMethod.invoke(rentalService, key, first);
+        Object prev2 = putMethod.invoke(rentalService, key, second);
+
+        assertEquals(null, prev1);
+        assertEquals(first, prev2);
+    }
     private RentalCreateRequest createRequest(Long userId, Long carId, List<Long> serviceIds) {
         RentalCreateRequest request = new RentalCreateRequest();
         request.setUserId(userId);
