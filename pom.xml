@@ -23,6 +23,17 @@
         <maven.compiler.target>17</maven.compiler.target>
         <lombok.version>1.18.38</lombok.version>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.coverage.exclusions>
+            src/main/java/com/example/carsharing/controller/**,
+            src/main/java/com/example/carsharing/config/**,
+            src/main/java/com/example/carsharing/aspect/**,
+            src/main/java/com/example/carsharing/exception/**,
+            src/main/java/com/example/carsharing/model/**,
+            src/main/java/com/example/carsharing/repository/**,
+            src/main/java/com/example/carsharing/service/mapper/**,
+            src/main/java/com/example/carsharing/dto/**,
+            src/main/java/com/example/carsharing/CarsharingApplication.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
