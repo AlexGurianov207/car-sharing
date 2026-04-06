@@ -3,7 +3,6 @@ package com.example.carsharing.service;
 import com.example.carsharing.dto.BulkRentalResponse;
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
-import com.example.carsharing.exception.ConflictException;
 import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.Car;
 import com.example.carsharing.model.CarStatus;
@@ -31,7 +30,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
