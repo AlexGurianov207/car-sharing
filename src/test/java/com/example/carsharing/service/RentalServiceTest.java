@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -383,6 +384,141 @@ class RentalServiceTest {
         assertEquals(expected, actual);
         verify(rentalRepository, org.mockito.Mockito.times(1)).save(org.mockito.ArgumentMatchers.any(Rental.class));
     }
+    @Test
+    void createRentalWithoutTransaction_whenCarNotAvailable_shouldThrow() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of());
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        car.setStatus(CarStatus.RENTED);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+
+        assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> rentalService.createRentalWithoutTransaction(request));
+    }
+
+    @Test
+    void createRentalWithoutTransaction_whenNoServices_shouldReturnResponse() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of());
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(103L);
+        RentalResponse expected = new RentalResponse();
+        expected.setId(103L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalMapper.toResponse(savedRental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.createRentalWithoutTransaction(request);
+
+        assertEquals(expected, actual);
+        verify(extraServiceRepository, never()).findAllById(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void createRentalWithTransaction_whenCarNotAvailable_shouldThrow() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of());
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        car.setStatus(CarStatus.RENTED);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+
+        assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> rentalService.createRentalWithTransaction(request));
+    }
+
+    @Test
+    void createRentalWithTransaction_whenNoServices_shouldReturnResponse() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of());
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(203L);
+        RentalResponse expected = new RentalResponse();
+        expected.setId(203L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalMapper.toResponse(savedRental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.createRentalWithTransaction(request);
+
+        assertEquals(expected, actual);
+        verify(extraServiceRepository, never()).findAllById(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void demonstrateNPlus1Problem_shouldMapAll() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        RentalResponse response = new RentalResponse();
+        when(rentalRepository.findAllSlow()).thenReturn(List.of(rental));
+        when(rentalMapper.toResponse(rental)).thenReturn(response);
+
+        List<RentalResponse> result = rentalService.demonstrateNPlus1Problem();
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void demonstrateSolutionWithEntityGraph_shouldMapAll() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        RentalResponse response = new RentalResponse();
+        when(rentalRepository.findAll()).thenReturn(List.of(rental));
+        when(rentalMapper.toResponse(rental)).thenReturn(response);
+
+        List<RentalResponse> result = rentalService.demonstrateSolutionWithEntityGraph();
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void deleteRental_whenActive_shouldThrow() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        rental.setStatus(RentalStatus.ACTIVE);
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+
+        assertThrows(InvalidDataAccessApiUsageException.class, () -> rentalService.deleteRental(1L));
+    }
+
+    @Test
+    void deleteRental_whenPaymentLinked_shouldDetachAndDelete() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        rental.setStatus(RentalStatus.COMPLETED);
+        com.example.carsharing.model.Payment payment = new com.example.carsharing.model.Payment();
+        payment.setRental(rental);
+        rental.setPayment(payment);
+
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+
+        rentalService.deleteRental(1L);
+
+        assertEquals(null, payment.getRental());
+        verify(paymentRepository).save(payment);
+        verify(rentalRepository).delete(rental);
+    }
+
+    @Test
+    void deleteRental_whenNoPayment_shouldDeleteOnlyRental() {
+        Rental rental = baseRental(activeUser(1L), availableCar(1L));
+        rental.setStatus(RentalStatus.COMPLETED);
+        rental.setPayment(null);
+
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+
+        rentalService.deleteRental(1L);
+
+        verify(paymentRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(rentalRepository).delete(rental);
+    }
     private RentalCreateRequest createRequest(Long userId, Long carId, List<Long> serviceIds) {
         RentalCreateRequest request = new RentalCreateRequest();
         request.setUserId(userId);
@@ -419,4 +555,6 @@ class RentalServiceTest {
         return rental;
     }
 }
+
+
 
