@@ -74,6 +74,18 @@ class ExtraServiceServiceTest {
     }
 
     @Test
+    void getServiceById_whenFound_shouldReturnMappedResponse() {
+        ExtraService service = new ExtraService();
+        ExtraServiceResponse expected = new ExtraServiceResponse();
+        when(extraServiceRepository.findById(1L)).thenReturn(Optional.of(service));
+        when(extraServiceMapper.toResponse(service)).thenReturn(expected);
+
+        ExtraServiceResponse actual = extraServiceService.getServiceById(1L);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
     void getAllServices_whenCategoryProvided_shouldUseCategoryFilter() {
         ExtraService service = new ExtraService();
         ExtraServiceResponse response = new ExtraServiceResponse();
@@ -167,6 +179,19 @@ class ExtraServiceServiceTest {
                 () -> extraServiceService.updateServiceStatus(1L, false));
 
         verify(extraServiceRepository, never()).save(service);
+    }
+
+    @Test
+    void updateServiceStatus_whenDeactivateAndNotAttached_shouldSetFalseAndSave() {
+        ExtraService service = new ExtraService();
+        service.setIsActive(true);
+        when(extraServiceRepository.findById(1L)).thenReturn(Optional.of(service));
+        when(carRepository.findByAvailableServicesId(1L)).thenReturn(List.of());
+
+        extraServiceService.updateServiceStatus(1L, false);
+
+        assertEquals(false, service.getIsActive());
+        verify(extraServiceRepository).save(service);
     }
 
     @Test
