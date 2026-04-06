@@ -82,9 +82,33 @@ class UserServiceTest {
     }
 
     @Test
+    void getUserById_whenFound_shouldReturnMappedResponse() {
+        User user = new User();
+        UserResponse expected = new UserResponse();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userMapper.toResponse(user)).thenReturn(expected);
+
+        UserResponse actual = userService.getUserById(1L);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
     void getUserByEmail_whenMissing_shouldThrow() {
         when(userRepository.findByEmail("u@test.com")).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> userService.getUserByEmail("u@test.com"));
+    }
+
+    @Test
+    void getUserByEmail_whenFound_shouldReturnMappedResponse() {
+        User user = new User();
+        UserResponse expected = new UserResponse();
+        when(userRepository.findByEmail("u@test.com")).thenReturn(Optional.of(user));
+        when(userMapper.toResponse(user)).thenReturn(expected);
+
+        UserResponse actual = userService.getUserByEmail("u@test.com");
+
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -165,6 +189,19 @@ class UserServiceTest {
 
         assertEquals(UserStatus.BLOCKED, user.getStatus());
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateUserStatus_whenSetActive_shouldSaveWithoutRentalCheck() {
+        User user = new User();
+        user.setStatus(UserStatus.BLOCKED);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.updateUserStatus(1L, UserStatus.ACTIVE);
+
+        assertEquals(UserStatus.ACTIVE, user.getStatus());
+        verify(userRepository).save(user);
+        verify(rentalRepository, never()).existsByUserIdAndEndTimeIsNull(1L);
     }
 
     @Test
