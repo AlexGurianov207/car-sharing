@@ -359,6 +359,38 @@ class CarServiceTest {
         verify(rentalService).invalidateSearchIndex();
     }
 
+    @Test
+    void updateCar_whenRentedButNoActiveRental_shouldSave() {
+        Car existing = baseCar(CarStatus.RENTED);
+        existing.setLicensePlate("OLD-PLATE");
+        CarCreateRequest request = createRequest();
+        CarResponse expected = new CarResponse();
+        when(carRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(rentalRepository.existsByCarIdAndEndTimeIsNull(1L)).thenReturn(false);
+        when(carRepository.existsByLicensePlate("1234AB-7")).thenReturn(false);
+        when(carRepository.save(existing)).thenReturn(existing);
+        when(carMapper.toResponse(existing)).thenReturn(expected);
+
+        CarResponse actual = carService.updateCar(1L, request);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void updateCar_whenLicenseChangedAndFree_shouldSave() {
+        Car existing = baseCar(CarStatus.AVAILABLE);
+        existing.setLicensePlate("OLD-PLATE");
+        CarCreateRequest request = createRequest();
+        CarResponse expected = new CarResponse();
+        when(carRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(carRepository.existsByLicensePlate("1234AB-7")).thenReturn(false);
+        when(carRepository.save(existing)).thenReturn(existing);
+        when(carMapper.toResponse(existing)).thenReturn(expected);
+
+        CarResponse actual = carService.updateCar(1L, request);
+
+        assertEquals(expected, actual);
+    }
     private CarCreateRequest createRequest() {
         CarCreateRequest request = new CarCreateRequest();
         request.setLicensePlate("1234AB-7");
@@ -381,3 +413,5 @@ class CarServiceTest {
         return car;
     }
 }
+
+
