@@ -237,6 +237,152 @@ class RentalServiceTest {
         assertEquals(2, result.getRentals().size());
     }
 
+    @Test
+    void createRentalWithoutTransaction_whenServiceMissing_shouldThrowAfterPartialSaves() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of(10L, 11L));
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(100L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+
+        ExtraService onlyOne = new ExtraService();
+        onlyOne.setId(10L);
+        when(extraServiceRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(onlyOne));
+
+        assertThrows(java.util.NoSuchElementException.class,
+                () -> rentalService.createRentalWithoutTransaction(request));
+
+        verify(rentalRepository).save(org.mockito.ArgumentMatchers.any(Rental.class));
+        verify(carRepository).save(car);
+    }
+
+    @Test
+    void createRentalWithoutTransaction_whenServiceUnavailable_shouldThrow() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of(10L));
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        car.setAvailableServices(List.of());
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(101L);
+
+        ExtraService service = new ExtraService();
+        service.setId(10L);
+        service.setName("GPS");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(extraServiceRepository.findAllById(List.of(10L))).thenReturn(List.of(service));
+
+        assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> rentalService.createRentalWithoutTransaction(request));
+    }
+
+    @Test
+    void createRentalWithoutTransaction_whenValidWithServices_shouldReturnResponse() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of(10L));
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        ExtraService service = new ExtraService();
+        service.setId(10L);
+        service.setName("GPS");
+        car.setAvailableServices(List.of(service));
+
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(102L);
+        RentalResponse expected = new RentalResponse();
+        expected.setId(102L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(extraServiceRepository.findAllById(List.of(10L))).thenReturn(List.of(service));
+        when(rentalMapper.toResponse(savedRental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.createRentalWithoutTransaction(request);
+
+        assertEquals(expected, actual);
+        verify(rentalRepository, org.mockito.Mockito.times(2)).save(org.mockito.ArgumentMatchers.any(Rental.class));
+    }
+
+    @Test
+    void createRentalWithTransaction_whenServiceMissing_shouldThrow() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of(10L, 11L));
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(200L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+
+        ExtraService onlyOne = new ExtraService();
+        onlyOne.setId(10L);
+        when(extraServiceRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(onlyOne));
+
+        assertThrows(java.util.NoSuchElementException.class,
+                () -> rentalService.createRentalWithTransaction(request));
+    }
+
+    @Test
+    void createRentalWithTransaction_whenServiceUnavailable_shouldThrow() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of(10L));
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        car.setAvailableServices(List.of());
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(201L);
+
+        ExtraService service = new ExtraService();
+        service.setId(10L);
+        service.setName("GPS");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(extraServiceRepository.findAllById(List.of(10L))).thenReturn(List.of(service));
+
+        assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> rentalService.createRentalWithTransaction(request));
+    }
+
+    @Test
+    void createRentalWithTransaction_whenValidWithServices_shouldReturnResponse() {
+        RentalCreateRequest request = createRequest(1L, 1L, List.of(10L));
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        ExtraService service = new ExtraService();
+        service.setId(10L);
+        service.setName("GPS");
+        car.setAvailableServices(List.of(service));
+
+        Rental savedRental = baseRental(user, car);
+        savedRental.setId(202L);
+        RentalResponse expected = new RentalResponse();
+        expected.setId(202L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.save(org.mockito.ArgumentMatchers.any(Rental.class))).thenReturn(savedRental);
+        when(carRepository.save(car)).thenReturn(car);
+        when(extraServiceRepository.findAllById(List.of(10L))).thenReturn(List.of(service));
+        when(rentalMapper.toResponse(savedRental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.createRentalWithTransaction(request);
+
+        assertEquals(expected, actual);
+        verify(rentalRepository, org.mockito.Mockito.times(1)).save(org.mockito.ArgumentMatchers.any(Rental.class));
+    }
     private RentalCreateRequest createRequest(Long userId, Long carId, List<Long> serviceIds) {
         RentalCreateRequest request = new RentalCreateRequest();
         request.setUserId(userId);
@@ -273,3 +419,4 @@ class RentalServiceTest {
         return rental;
     }
 }
+
