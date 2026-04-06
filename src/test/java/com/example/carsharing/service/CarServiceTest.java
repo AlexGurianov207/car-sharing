@@ -23,7 +23,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,6 +69,44 @@ class CarServiceTest {
     }
 
     @Test
+    void findById_whenFound_shouldReturnMappedResponse() {
+        Car car = baseCar(CarStatus.AVAILABLE);
+        CarResponse expected = new CarResponse();
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(carMapper.toResponse(car)).thenReturn(expected);
+
+        CarResponse actual = carService.findById(1L);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void findById_whenMissing_shouldThrowNotFound() {
+        when(carRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> carService.findById(1L));
+    }
+
+    @Test
+    void findByLicensePlate_whenFound_shouldReturnMappedResponse() {
+        Car car = baseCar(CarStatus.AVAILABLE);
+        CarResponse expected = new CarResponse();
+        when(carRepository.findByLicensePlate("1234AB-7")).thenReturn(Optional.of(car));
+        when(carMapper.toResponse(car)).thenReturn(expected);
+
+        CarResponse actual = carService.findByLicensePlate("1234AB-7");
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void findByLicensePlate_whenMissing_shouldThrowNotFound() {
+        when(carRepository.findByLicensePlate("1234AB-7")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> carService.findByLicensePlate("1234AB-7"));
+    }
+
+    @Test
     void findAll_whenStatusProvided_shouldUseFilteredRepository() {
         Car car = baseCar(CarStatus.AVAILABLE);
         when(carRepository.findByStatus(CarStatus.AVAILABLE)).thenReturn(List.of(car));
@@ -91,6 +128,32 @@ class CarServiceTest {
 
         assertEquals(1, result.size());
         verify(carRepository).findAll();
+    }
+
+    @Test
+    void findByMaxPrice_shouldMapAll() {
+        Car car = baseCar(CarStatus.AVAILABLE);
+        CarResponse response = new CarResponse();
+        when(carRepository.findByPricePerHourLessThanEqual(15.0)).thenReturn(List.of(car));
+        when(carMapper.toResponse(car)).thenReturn(response);
+
+        List<CarResponse> result = carService.findByMaxPrice(15.0);
+
+        assertEquals(1, result.size());
+        assertEquals(response, result.get(0));
+    }
+
+    @Test
+    void findByBrandAndModel_shouldMapAll() {
+        Car car = baseCar(CarStatus.AVAILABLE);
+        CarResponse response = new CarResponse();
+        when(carRepository.findByBrandAndModel("Toyota", "Camry")).thenReturn(List.of(car));
+        when(carMapper.toResponse(car)).thenReturn(response);
+
+        List<CarResponse> result = carService.findByBrandAndModel("Toyota", "Camry");
+
+        assertEquals(1, result.size());
+        assertEquals(response, result.get(0));
     }
 
     @Test
@@ -122,6 +185,21 @@ class CarServiceTest {
 
         assertThrows(DataIntegrityViolationException.class,
                 () -> carService.updateCar(1L, request));
+    }
+
+    @Test
+    void updateCar_whenSameLicense_shouldSaveWithoutDuplicateCheck() {
+        Car existing = baseCar(CarStatus.AVAILABLE);
+        CarCreateRequest request = createRequest();
+        CarResponse expected = new CarResponse();
+        when(carRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(carRepository.save(existing)).thenReturn(existing);
+        when(carMapper.toResponse(existing)).thenReturn(expected);
+
+        CarResponse actual = carService.updateCar(1L, request);
+
+        assertEquals(expected, actual);
+        verify(carRepository, never()).existsByLicensePlate("1234AB-7");
     }
 
     @Test
@@ -158,12 +236,65 @@ class CarServiceTest {
     }
 
     @Test
+    void deleteCar_whenHasRentalHistory_shouldSoftDelete() {
+        Car car = baseCar(CarStatus.AVAILABLE);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.existsByCarId(1L)).thenReturn(true);
+
+        carService.deleteCar(1L);
+
+        assertEquals(CarStatus.DELETED, car.getStatus());
+        verify(carRepository).save(car);
+        verify(rentalService).invalidateSearchIndex();
+    }
+
+    @Test
+    void deleteCar_whenNoRentalHistory_shouldHardDelete() {
+        Car car = baseCar(CarStatus.AVAILABLE);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.existsByCarId(1L)).thenReturn(false);
+
+        carService.deleteCar(1L);
+
+        verify(carRepository).deleteById(1L);
+        verify(rentalService).invalidateSearchIndex();
+    }
+
+    @Test
+    void updateAvailableServices_whenDeletedCar_shouldThrow() {
+        Car car = baseCar(CarStatus.DELETED);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+
+        assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> carService.updateAvailableServices(1L, List.of(1L)));
+    }
+
+    @Test
+    void updateAvailableServices_whenRentedWithActiveRental_shouldThrow() {
+        Car car = baseCar(CarStatus.RENTED);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+        when(rentalRepository.existsByCarIdAndEndTimeIsNull(1L)).thenReturn(true);
+
+        assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> carService.updateAvailableServices(1L, List.of(1L)));
+    }
+
+    @Test
     void updateAvailableServices_whenServiceIdsNull_shouldThrow() {
         Car car = baseCar(CarStatus.AVAILABLE);
         when(carRepository.findById(1L)).thenReturn(Optional.of(car));
 
         assertThrows(InvalidDataAccessApiUsageException.class,
                 () -> carService.updateAvailableServices(1L, null));
+    }
+
+    @Test
+    void updateAvailableServices_whenServiceIdsEmpty_shouldThrow() {
+        Car car = baseCar(CarStatus.AVAILABLE);
+        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+
+        assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> carService.updateAvailableServices(1L, List.of()));
     }
 
     @Test

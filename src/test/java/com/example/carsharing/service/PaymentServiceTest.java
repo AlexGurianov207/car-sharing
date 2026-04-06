@@ -152,6 +152,33 @@ class PaymentServiceTest {
     }
 
     @Test
+    void createPayment_whenDurationExactly24Hours_shouldUseSingleDayForServices() {
+        PaymentCreateRequest request = createRequest();
+        request.setTransactionId("TXN-24H");
+
+        Rental rental = baseCompletedRental();
+        rental.setEndTime(rental.getStartTime().plusHours(24));
+        ExtraService service = new ExtraService();
+        service.setPricePerDay(5.0);
+        rental.setSelectedServices(List.of(service));
+        Payment entity = new Payment();
+        PaymentResponse expected = new PaymentResponse();
+
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+        when(paymentRepository.existsByRentalId(1L)).thenReturn(false);
+        when(paymentMapper.toEntity(request, rental)).thenReturn(entity);
+        when(paymentRepository.save(entity)).thenReturn(entity);
+        when(paymentMapper.toResponse(entity)).thenReturn(expected);
+
+        PaymentResponse actual = paymentService.createPayment(request);
+
+        assertEquals(expected, actual);
+        assertEquals(240.0, entity.getCarAmount());
+        assertEquals(5.0, entity.getServicesAmount());
+        assertEquals(245.0, entity.getAmount());
+    }
+
+    @Test
     void getPaymentById_whenMissing_shouldThrow() {
         when(paymentRepository.findById(11L)).thenReturn(Optional.empty());
 
