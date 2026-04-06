@@ -127,10 +127,60 @@ class PaymentServiceTest {
     }
 
     @Test
+    void createPayment_whenDurationLessThanHour_shouldUseMinimumOneHour() {
+        PaymentCreateRequest request = createRequest();
+        request.setTransactionId("TXN-MIN-HOUR");
+
+        Rental rental = baseCompletedRental();
+        rental.setEndTime(rental.getStartTime().plusMinutes(30));
+        rental.setSelectedServices(List.of());
+        Payment entity = new Payment();
+        PaymentResponse expected = new PaymentResponse();
+
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+        when(paymentRepository.existsByRentalId(1L)).thenReturn(false);
+        when(paymentMapper.toEntity(request, rental)).thenReturn(entity);
+        when(paymentRepository.save(entity)).thenReturn(entity);
+        when(paymentMapper.toResponse(entity)).thenReturn(expected);
+
+        PaymentResponse actual = paymentService.createPayment(request);
+
+        assertEquals(expected, actual);
+        assertEquals(10.0, entity.getCarAmount());
+        assertEquals(0.0, entity.getServicesAmount());
+        assertEquals(10.0, entity.getAmount());
+    }
+
+    @Test
     void getPaymentById_whenMissing_shouldThrow() {
         when(paymentRepository.findById(11L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> paymentService.getPaymentById(11L));
+    }
+
+    @Test
+    void getPaymentById_whenFound_shouldReturnMappedResponse() {
+        Payment payment = new Payment();
+        PaymentResponse expected = new PaymentResponse();
+        when(paymentRepository.findById(11L)).thenReturn(Optional.of(payment));
+        when(paymentMapper.toResponse(payment)).thenReturn(expected);
+
+        PaymentResponse actual = paymentService.getPaymentById(11L);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void getAllPayments_shouldMapAll() {
+        Payment payment = new Payment();
+        PaymentResponse expected = new PaymentResponse();
+        when(paymentRepository.findAll()).thenReturn(List.of(payment));
+        when(paymentMapper.toResponse(payment)).thenReturn(expected);
+
+        List<PaymentResponse> actual = paymentService.getAllPayments();
+
+        assertEquals(1, actual.size());
+        assertEquals(expected, actual.get(0));
     }
 
     @Test
