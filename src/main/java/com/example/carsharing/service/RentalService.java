@@ -712,3 +712,4 @@ public class RentalService {
         invalidateSearchIndex();
         return rentalMapper.toResponse(savedRental);
     }
+}
