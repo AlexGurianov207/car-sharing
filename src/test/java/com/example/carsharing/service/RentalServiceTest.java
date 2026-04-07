@@ -1103,6 +1103,175 @@ class RentalServiceTest {
         assertEquals(null, prev1);
         assertEquals(first, prev2);
     }
+
+    @Test
+    void completeRental_whenExactly24Hours_shouldUseOneDayForServices() {
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+        car.setPricePerHour(2.0);
+
+        ExtraService service = new ExtraService();
+        service.setName("GPS");
+        service.setPricePerDay(5.0);
+
+        Rental rental = baseRental(user, car);
+        rental.setStatus(RentalStatus.ACTIVE);
+        rental.setStartTime(java.time.LocalDateTime.now().minusHours(24));
+        rental.setSelectedServices(List.of(service));
+
+        RentalResponse expected = new RentalResponse();
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+        when(carRepository.save(car)).thenReturn(car);
+        when(rentalRepository.save(rental)).thenReturn(rental);
+        when(rentalMapper.toResponse(rental)).thenReturn(expected);
+
+        RentalResponse actual = rentalService.completeRental(1L);
+
+        assertEquals(expected, actual);
+        assertEquals(48.0, rental.getPayment().getCarAmount());
+        assertEquals(5.0, rental.getPayment().getServicesAmount());
+    }
+
+    @Test
+    void completeRental_whenSelectedServicesNull_shouldThrowNpe() {
+        User user = activeUser(1L);
+        Car car = availableCar(1L);
+
+        Rental rental = baseRental(user, car);
+        rental.setStatus(RentalStatus.ACTIVE);
+        rental.setStartTime(java.time.LocalDateTime.now().minusHours(2));
+        rental.setSelectedServices(null);
+
+        when(rentalRepository.findById(1L)).thenReturn(Optional.of(rental));
+
+        assertThrows(NullPointerException.class, () -> rentalService.completeRental(1L));
+    }
+
+    @Test
+    void rentalSearchCacheKey_equals_shouldCoverSelfNullAndFields() throws Exception {
+        Class<?> queryTypeClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
+                .filter(Class::isEnum)
+                .filter(c -> c.getSimpleName().equals("QueryType"))
+                .findFirst()
+                .orElseThrow();
+        Object jpql = java.util.Arrays.stream(queryTypeClass.getEnumConstants())
+                .filter(e -> e.toString().equals("JPQL"))
+                .findFirst()
+                .orElseThrow();
+
+        Class<?> keyClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
+                .filter(c -> c.getSimpleName().equals("RentalSearchCacheKey"))
+                .findFirst()
+                .orElseThrow();
+
+        java.lang.reflect.Constructor<?> ctor = keyClass.getDeclaredConstructor(
+                String.class,
+                Long.class,
+                RentalStatus.class,
+                int.class,
+                int.class,
+                String.class,
+                queryTypeClass
+        );
+        ctor.setAccessible(true);
+
+        Object key1 = ctor.newInstance("toyota", 1L, RentalStatus.ACTIVE, 0, -1, "LIST[startTime,DESC]", jpql);
+        Object key2 = ctor.newInstance("toyota", 1L, RentalStatus.ACTIVE, 0, -1, "LIST[startTime,DESC]", jpql);
+
+        assertEquals(true, key1.equals(key1));
+        assertEquals(false, key1.equals(null));
+        assertEquals(false, key1.equals("not-a-key"));
+        assertEquals(true, key1.equals(key2));
+    }
+
+    @Test
+    void splitServiceNames_shouldReturnEmptyForBlankAndFilterEmptyParts() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod("splitServiceNames", String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        List<String> empty = (List<String>) method.invoke(rentalService, "   ");
+        @SuppressWarnings("unchecked")
+        List<String> parsed = (List<String>) method.invoke(rentalService, "GPS;; , WiFi; ");
+
+        assertEquals(List.of(), empty);
+        assertEquals(List.of("GPS", "WiFi"), parsed);
+    }
+
+    @Test
+    void resolveUserFullName_shouldUseSnapshotOrLiveOrFallback() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod(
+                "resolveUserFullName",
+                RentalRepository.RentalNativeSearchProjection.class,
+                boolean.class
+        );
+        method.setAccessible(true);
+
+        RentalRepository.RentalNativeSearchProjection row = org.mockito.Mockito.mock(
+                RentalRepository.RentalNativeSearchProjection.class);
+        when(row.getUserFullNameSnapshot()).thenReturn("Snapshot Name");
+        when(row.getUserFirstName()).thenReturn(null);
+        when(row.getUserLastName()).thenReturn(null);
+
+        String completed = (String) method.invoke(rentalService, row, true);
+        String fallback = (String) method.invoke(rentalService, row, false);
+
+        when(row.getUserFirstName()).thenReturn("Ivan");
+        when(row.getUserLastName()).thenReturn("Petrov");
+        String live = (String) method.invoke(rentalService, row, false);
+
+        assertEquals("Snapshot Name", completed);
+        assertEquals("Snapshot Name", fallback);
+        assertEquals("Ivan Petrov", live);
+    }
+
+    @Test
+    void resolveCarInfo_shouldUseSnapshotLiveOrFallback() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod(
+                "resolveCarInfo",
+                RentalRepository.RentalNativeSearchProjection.class,
+                boolean.class
+        );
+        method.setAccessible(true);
+
+        RentalRepository.RentalNativeSearchProjection row = org.mockito.Mockito.mock(
+                RentalRepository.RentalNativeSearchProjection.class);
+        when(row.getCarInfoSnapshot()).thenReturn("Snapshot Car");
+
+        String completed = (String) method.invoke(rentalService, row, true);
+
+        when(row.getCarBrand()).thenReturn("Toyota");
+        when(row.getCarModel()).thenReturn("Camry");
+        when(row.getCarLicensePlate()).thenReturn("1234-AA");
+        String live = (String) method.invoke(rentalService, row, false);
+
+        when(row.getCarBrand()).thenReturn(null);
+        String fallback = (String) method.invoke(rentalService, row, false);
+
+        assertEquals("Snapshot Car", completed);
+        assertEquals("Toyota Camry (1234-AA)", live);
+        assertEquals("Snapshot Car", fallback);
+    }
+
+    @Test
+    void resolveSelectedServices_whenCompletedSnapshotBlank_shouldUseLiveList() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod(
+                "resolveSelectedServices",
+                RentalRepository.RentalNativeSearchProjection.class,
+                boolean.class
+        );
+        method.setAccessible(true);
+
+        RentalRepository.RentalNativeSearchProjection row = org.mockito.Mockito.mock(
+                RentalRepository.RentalNativeSearchProjection.class);
+        when(row.getServiceNamesSnapshot()).thenReturn("   ");
+        when(row.getSelectedServiceNames()).thenReturn("GPS;WiFi");
+
+        @SuppressWarnings("unchecked")
+        List<String> result = (List<String>) method.invoke(rentalService, row, true);
+
+        assertEquals(List.of("GPS", "WiFi"), result);
+    }
     private RentalCreateRequest createRequest(Long userId, Long carId, List<Long> serviceIds) {
         RentalCreateRequest request = new RentalCreateRequest();
         request.setUserId(userId);
