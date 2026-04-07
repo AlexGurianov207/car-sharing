@@ -331,7 +331,7 @@ public class RentalService {
     public RentalResponse createRental(RentalCreateRequest request) {
         return createRentalInternal(request);
     }
-
+    @Transactional
     public BulkRentalResponse createRentalsBulk(List<RentalCreateRequest> requests) {
         return createRentalsBulkWithTransaction(requests);
     }
@@ -594,31 +594,31 @@ public class RentalService {
         rentalRepository.delete(rental);
         invalidateSearchIndex();
 
-        log.info("Аренда {} и связанный платеж удалены", id);
+        log.info("Р С’РЎР‚Р ВµР Р…Р Т‘Р В° {} Р С‘ РЎРѓР Р†РЎРЏР В·Р В°Р Р…Р Р…РЎвЂ№Р в„– Р С—Р В»Р В°РЎвЂљР ВµР В¶ РЎС“Р Т‘Р В°Р В»Р ВµР Р…РЎвЂ№", id);
     }
 
     public List<RentalResponse> demonstrateNPlus1Problem() {
-        log.info("========== ДЕМОНСТРАЦИЯ N+1 ПРОБЛЕМЫ ==========");
+        log.info("========== Р вЂќР вЂўР СљР С›Р СњР РЋР СћР В Р С’Р В¦Р ВР Р‡ N+1 Р СџР В Р С›Р вЂР вЂєР вЂўР СљР В« ==========");
         List<Rental> rentals = rentalRepository.findAllSlow();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
                 .toList();
-        log.info("========== КОНЕЦ ДЕМОНСТРАЦИИ ==========");
+        log.info("========== Р С™Р С›Р СњР вЂўР В¦ Р вЂќР вЂўР СљР С›Р СњР РЋР СћР В Р С’Р В¦Р ВР В ==========");
         return responses;
     }
 
     public List<RentalResponse> demonstrateSolutionWithEntityGraph() {
-        log.info("========== РЕШЕНИЕ N+1 ПРОБЛЕМЫ ==========");
+        log.info("========== Р В Р вЂўР РЃР вЂўР СњР ВР вЂў N+1 Р СџР В Р С›Р вЂР вЂєР вЂўР СљР В« ==========");
         List<Rental> rentals = rentalRepository.findAll();
         List<RentalResponse> responses = rentals.stream()
                 .map(rentalMapper::toResponse)
                 .toList();
-        log.info("========== КОНЕЦ РЕШЕНИЯ ==========");
+        log.info("========== Р С™Р С›Р СњР вЂўР В¦ Р В Р вЂўР РЃР вЂўР СњР ВР Р‡ ==========");
         return responses;
     }
 
     public RentalResponse createRentalWithoutTransaction(RentalCreateRequest request) {
-        log.info("=== ДЕМОНСТРАЦИЯ БЕЗ @Transactional ===");
+        log.info("=== Р вЂќР вЂўР СљР С›Р СњР РЋР СћР В Р С’Р В¦Р ВР Р‡ Р вЂР вЂўР вЂ” @Transactional ===");
 
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
@@ -636,23 +636,23 @@ public class RentalService {
         rental.setStartTime(LocalDateTime.now());
 
         Rental savedRental = rentalRepository.save(rental);
-        log.info("Аренда сохранена в БД! ID: {}", savedRental.getId());
+        log.info("Р С’РЎР‚Р ВµР Р…Р Т‘Р В° РЎРѓР С•РЎвЂ¦РЎР‚Р В°Р Р…Р ВµР Р…Р В° Р Р† Р вЂР вЂќ! ID: {}", savedRental.getId());
 
         car.setStatus(CarStatus.RENTED);
         carRepository.save(car);
-        log.info("Статус машины обновлен на RENTED");
+        log.info("Р РЋРЎвЂљР В°РЎвЂљРЎС“РЎРѓ Р СР В°РЎв‚¬Р С‘Р Р…РЎвЂ№ Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р… Р Р…Р В° RENTED");
 
         if (request.getServiceIds() != null && !request.getServiceIds().isEmpty()) {
             List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
 
             if (services.size() != request.getServiceIds().size()) {
-                log.error("ОШИБКА: Не все сервисы найдены. Аренда {} уже в БД!", savedRental.getId());
+                log.error("Р С›Р РЃР ВР вЂР С™Р С’: Р СњР Вµ Р Р†РЎРѓР Вµ РЎРѓР ВµРЎР‚Р Р†Р С‘РЎРѓРЎвЂ№ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…РЎвЂ№. Р С’РЎР‚Р ВµР Р…Р Т‘Р В° {} РЎС“Р В¶Р Вµ Р Р† Р вЂР вЂќ!", savedRental.getId());
                 throw new NoSuchElementException("Some services not found");
             }
 
             for (ExtraService service : services) {
                 if (!car.getAvailableServices().contains(service)) {
-                    log.error("ОШИБКА: Сервис {} недоступен. Аренда {} уже в БД!",
+                    log.error("Р С›Р РЃР ВР вЂР С™Р С’: Р РЋР ВµРЎР‚Р Р†Р С‘РЎРѓ {} Р Р…Р ВµР Т‘Р С•РЎРѓРЎвЂљРЎС“Р С—Р ВµР Р…. Р С’РЎР‚Р ВµР Р…Р Т‘Р В° {} РЎС“Р В¶Р Вµ Р Р† Р вЂР вЂќ!",
                             service.getName(), savedRental.getId());
                     throw new InvalidDataAccessApiUsageException("Service " + service.getName() +
                             " is not available for this car");
@@ -663,14 +663,14 @@ public class RentalService {
             rentalRepository.save(savedRental);
         }
 
-        log.info("Аренда {} успешно создана (НО ЕСЛИ БЫЛА ОШИБКА - ОНА БЫ ОСТАЛАСЬ!)", savedRental.getId());
+        log.info("Р С’РЎР‚Р ВµР Р…Р Т‘Р В° {} РЎС“РЎРѓР С—Р ВµРЎв‚¬Р Р…Р С• РЎРѓР С•Р В·Р Т‘Р В°Р Р…Р В° (Р СњР С› Р вЂўР РЋР вЂєР В Р вЂР В«Р вЂєР С’ Р С›Р РЃР ВР вЂР С™Р С’ - Р С›Р СњР С’ Р вЂР В« Р С›Р РЋР СћР С’Р вЂєР С’Р РЋР В¬!)", savedRental.getId());
         invalidateSearchIndex();
         return rentalMapper.toResponse(savedRental);
     }
 
     @Transactional
     public RentalResponse createRentalWithTransaction(RentalCreateRequest request) {
-        log.info("=== ДЕМОНСТРАЦИЯ С @Transactional ===");
+        log.info("=== Р вЂќР вЂўР СљР С›Р СњР РЋР СћР В Р С’Р В¦Р ВР Р‡ Р РЋ @Transactional ===");
 
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
@@ -688,7 +688,7 @@ public class RentalService {
         rental.setStartTime(LocalDateTime.now());
 
         Rental savedRental = rentalRepository.save(rental);
-        log.info("Аренда создана в памяти, но еще не закоммичена в БД");
+        log.info("Р С’РЎР‚Р ВµР Р…Р Т‘Р В° РЎРѓР С•Р В·Р Т‘Р В°Р Р…Р В° Р Р† Р С—Р В°Р СРЎРЏРЎвЂљР С‘, Р Р…Р С• Р ВµРЎвЂ°Р Вµ Р Р…Р Вµ Р В·Р В°Р С”Р С•Р СР СР С‘РЎвЂЎР ВµР Р…Р В° Р Р† Р вЂР вЂќ");
 
         car.setStatus(CarStatus.RENTED);
         carRepository.save(car);
@@ -697,13 +697,13 @@ public class RentalService {
             List<ExtraService> services = extraServiceRepository.findAllById(request.getServiceIds());
 
             if (services.size() != request.getServiceIds().size()) {
-                log.error("ОШИБКА: Не все сервисы найдены. Транзакция откатится!");
+                log.error("Р С›Р РЃР ВР вЂР С™Р С’: Р СњР Вµ Р Р†РЎРѓР Вµ РЎРѓР ВµРЎР‚Р Р†Р С‘РЎРѓРЎвЂ№ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…РЎвЂ№. Р СћРЎР‚Р В°Р Р…Р В·Р В°Р С”РЎвЂ Р С‘РЎРЏ Р С•РЎвЂљР С”Р В°РЎвЂљР С‘РЎвЂљРЎРѓРЎРЏ!");
                 throw new NoSuchElementException("Some services not found");
             }
 
             for (ExtraService service : services) {
                 if (!car.getAvailableServices().contains(service)) {
-                    log.error("ОШИБКА: Сервис {} недоступен. Транзакция откатится!", service.getName());
+                    log.error("Р С›Р РЃР ВР вЂР С™Р С’: Р РЋР ВµРЎР‚Р Р†Р С‘РЎРѓ {} Р Р…Р ВµР Т‘Р С•РЎРѓРЎвЂљРЎС“Р С—Р ВµР Р…. Р СћРЎР‚Р В°Р Р…Р В·Р В°Р С”РЎвЂ Р С‘РЎРЏ Р С•РЎвЂљР С”Р В°РЎвЂљР С‘РЎвЂљРЎРѓРЎРЏ!", service.getName());
                     throw new InvalidDataAccessApiUsageException("Service " + service.getName() +
                             " is not available for this car");
                 }
@@ -712,7 +712,7 @@ public class RentalService {
             rental.setSelectedServices(services);
         }
 
-        log.info("Транзакция успешно завершена. Аренда {} сохранена в БД", savedRental.getId());
+        log.info("Р СћРЎР‚Р В°Р Р…Р В·Р В°Р С”РЎвЂ Р С‘РЎРЏ РЎС“РЎРѓР С—Р ВµРЎв‚¬Р Р…Р С• Р В·Р В°Р Р†Р ВµРЎР‚РЎв‚¬Р ВµР Р…Р В°. Р С’РЎР‚Р ВµР Р…Р Т‘Р В° {} РЎРѓР С•РЎвЂ¦РЎР‚Р В°Р Р…Р ВµР Р…Р В° Р Р† Р вЂР вЂќ", savedRental.getId());
         invalidateSearchIndex();
         return rentalMapper.toResponse(savedRental);
     }
