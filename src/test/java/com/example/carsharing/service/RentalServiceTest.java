@@ -62,8 +62,9 @@ class RentalServiceTest {
 
     @Test
     void createRentalsBulk_whenRequestsEmpty_shouldThrow() {
+        List<RentalCreateRequest> requests = List.of();
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> rentalService.createRentalsBulkWithTransaction(List.of()));
+                () -> rentalService.createRentalsBulkWithTransaction(requests));
     }
 
     @Test
@@ -188,8 +189,9 @@ class RentalServiceTest {
         when(carRepository.save(car1)).thenReturn(car1);
         when(rentalMapper.toResponse(rental1)).thenReturn(response1);
 
+        List<RentalCreateRequest> requests = List.of(first, second);
         assertThrows(DataIntegrityViolationException.class,
-                () -> rentalService.createRentalsBulkWithoutTransaction(List.of(first, second)));
+                () -> rentalService.createRentalsBulkWithoutTransaction(requests));
 
         verify(rentalRepository).save(rental1);
     }

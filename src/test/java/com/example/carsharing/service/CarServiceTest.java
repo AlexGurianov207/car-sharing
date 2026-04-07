@@ -161,8 +161,9 @@ class CarServiceTest {
         Car existing = baseCar(CarStatus.DELETED);
         when(carRepository.findById(1L)).thenReturn(Optional.of(existing));
 
+        CarCreateRequest request = createRequest();
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> carService.updateCar(1L, createRequest()));
+                () -> carService.updateCar(1L, request));
     }
 
     @Test
@@ -171,8 +172,9 @@ class CarServiceTest {
         when(carRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(rentalRepository.existsByCarIdAndEndTimeIsNull(1L)).thenReturn(true);
 
+        CarCreateRequest request = createRequest();
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> carService.updateCar(1L, createRequest()));
+                () -> carService.updateCar(1L, request));
     }
 
     @Test
@@ -265,8 +267,9 @@ class CarServiceTest {
         Car car = baseCar(CarStatus.DELETED);
         when(carRepository.findById(1L)).thenReturn(Optional.of(car));
 
+        List<Long> serviceIds = List.of(1L);
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> carService.updateAvailableServices(1L, List.of(1L)));
+                () -> carService.updateAvailableServices(1L, serviceIds));
     }
 
     @Test
@@ -275,8 +278,9 @@ class CarServiceTest {
         when(carRepository.findById(1L)).thenReturn(Optional.of(car));
         when(rentalRepository.existsByCarIdAndEndTimeIsNull(1L)).thenReturn(true);
 
+        List<Long> serviceIds = List.of(1L);
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> carService.updateAvailableServices(1L, List.of(1L)));
+                () -> carService.updateAvailableServices(1L, serviceIds));
     }
 
     @Test
@@ -293,8 +297,9 @@ class CarServiceTest {
         Car car = baseCar(CarStatus.AVAILABLE);
         when(carRepository.findById(1L)).thenReturn(Optional.of(car));
 
+        List<Long> serviceIds = List.of();
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> carService.updateAvailableServices(1L, List.of()));
+                () -> carService.updateAvailableServices(1L, serviceIds));
     }
 
     @Test
@@ -302,8 +307,9 @@ class CarServiceTest {
         Car car = baseCar(CarStatus.AVAILABLE);
         when(carRepository.findById(1L)).thenReturn(Optional.of(car));
 
+        List<Long> serviceIds = java.util.Arrays.asList(1L, null);
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> carService.updateAvailableServices(1L, java.util.Arrays.asList(1L, null)));
+                () -> carService.updateAvailableServices(1L, serviceIds));
     }
 
     @Test
@@ -314,8 +320,9 @@ class CarServiceTest {
         when(carRepository.findById(1L)).thenReturn(Optional.of(car));
         when(extraServiceRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(service));
 
+        List<Long> serviceIds = List.of(1L, 2L);
         assertThrows(DataIntegrityViolationException.class,
-                () -> carService.updateAvailableServices(1L, List.of(1L, 2L)));
+                () -> carService.updateAvailableServices(1L, serviceIds));
     }
 
     @Test
@@ -332,8 +339,9 @@ class CarServiceTest {
         when(carRepository.findById(1L)).thenReturn(Optional.of(car));
         when(extraServiceRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(active, inactive));
 
+        List<Long> serviceIds = List.of(1L, 2L);
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> carService.updateAvailableServices(1L, List.of(1L, 2L)));
+                () -> carService.updateAvailableServices(1L, serviceIds));
     }
 
     @Test

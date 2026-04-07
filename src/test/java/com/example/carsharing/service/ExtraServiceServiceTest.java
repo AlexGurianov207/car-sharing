@@ -130,8 +130,9 @@ class ExtraServiceServiceTest {
         existing.setIsActive(true);
         when(extraServiceRepository.findById(1L)).thenReturn(Optional.of(existing));
 
+        ExtraServiceCreateRequest request = createRequest();
         assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> extraServiceService.updateService(1L, createRequest()));
+                () -> extraServiceService.updateService(1L, request));
 
         verify(extraServiceRepository, never()).save(existing);
     }
