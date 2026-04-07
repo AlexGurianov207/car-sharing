@@ -1064,14 +1064,15 @@ class RentalServiceTest {
     void putToIndex_whenKeyAlreadyExists_shouldReturnPreviousAndUpdate() throws Exception {
         Class<?> queryTypeClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
                 .filter(Class::isEnum)
-                .filter(c -> c.getSimpleName().equals("QueryType"))
                 .findFirst()
                 .orElseThrow();
 
         Object jpql = queryTypeClass.getEnumConstants()[0];
 
         Class<?> keyClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
-                .filter(c -> c.getSimpleName().equals("RentalSearchCacheKey"))
+                .filter(c -> !c.isEnum())
+                .filter(c -> java.util.Arrays.stream(c.getDeclaredConstructors())
+                        .anyMatch(ctor -> ctor.getParameterCount() == 7))
                 .findFirst()
                 .orElseThrow();
 
@@ -1151,7 +1152,6 @@ class RentalServiceTest {
     void rentalSearchCacheKey_equals_shouldCoverSelfNullAndFields() throws Exception {
         Class<?> queryTypeClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
                 .filter(Class::isEnum)
-                .filter(c -> c.getSimpleName().equals("QueryType"))
                 .findFirst()
                 .orElseThrow();
         Object jpql = java.util.Arrays.stream(queryTypeClass.getEnumConstants())
@@ -1160,7 +1160,9 @@ class RentalServiceTest {
                 .orElseThrow();
 
         Class<?> keyClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
-                .filter(c -> c.getSimpleName().equals("RentalSearchCacheKey"))
+                .filter(c -> !c.isEnum())
+                .filter(c -> java.util.Arrays.stream(c.getDeclaredConstructors())
+                        .anyMatch(ctor -> ctor.getParameterCount() == 7))
                 .findFirst()
                 .orElseThrow();
 
@@ -1343,7 +1345,6 @@ class RentalServiceTest {
     void rentalSearchCacheKey_equals_shouldReturnFalseWhenEachFieldDiffers() throws Exception {
         Class<?> queryTypeClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
                 .filter(Class::isEnum)
-                .filter(c -> c.getSimpleName().equals("QueryType"))
                 .findFirst()
                 .orElseThrow();
 
@@ -1357,7 +1358,9 @@ class RentalServiceTest {
                 .orElseThrow();
 
         Class<?> keyClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
-                .filter(c -> c.getSimpleName().equals("RentalSearchCacheKey"))
+                .filter(c -> !c.isEnum())
+                .filter(c -> java.util.Arrays.stream(c.getDeclaredConstructors())
+                        .anyMatch(ctor -> ctor.getParameterCount() == 7))
                 .findFirst()
                 .orElseThrow();
 
