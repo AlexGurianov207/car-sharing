@@ -1272,6 +1272,124 @@ class RentalServiceTest {
 
         assertEquals(List.of("GPS", "WiFi"), result);
     }
+
+    @Test
+    void hasText_shouldHandleNullBlankAndValue() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod("hasText", String.class);
+        method.setAccessible(true);
+
+        assertEquals(false, method.invoke(rentalService, new Object[]{null}));
+        assertEquals(false, method.invoke(rentalService, "   "));
+        assertEquals(true, method.invoke(rentalService, "abc"));
+    }
+
+    @Test
+    void resolveUserFullName_whenCompletedAndSnapshotBlank_shouldUseLiveName() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod(
+                "resolveUserFullName",
+                RentalRepository.RentalNativeSearchProjection.class,
+                boolean.class
+        );
+        method.setAccessible(true);
+
+        RentalRepository.RentalNativeSearchProjection row = org.mockito.Mockito.mock(
+                RentalRepository.RentalNativeSearchProjection.class);
+        when(row.getUserFullNameSnapshot()).thenReturn("   ");
+        when(row.getUserFirstName()).thenReturn("John");
+        when(row.getUserLastName()).thenReturn("Doe");
+
+        String result = (String) method.invoke(rentalService, row, true);
+
+        assertEquals("John Doe", result);
+    }
+
+    @Test
+    void resolveCarInfo_whenCompletedAndSnapshotBlank_shouldCheckLivePartsAndFallback() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod(
+                "resolveCarInfo",
+                RentalRepository.RentalNativeSearchProjection.class,
+                boolean.class
+        );
+        method.setAccessible(true);
+
+        RentalRepository.RentalNativeSearchProjection row = org.mockito.Mockito.mock(
+                RentalRepository.RentalNativeSearchProjection.class);
+        when(row.getCarInfoSnapshot()).thenReturn("   ");
+
+        when(row.getCarBrand()).thenReturn("Toyota");
+        when(row.getCarModel()).thenReturn(null);
+        String noModel = (String) method.invoke(rentalService, row, true);
+
+        when(row.getCarModel()).thenReturn("Camry");
+        when(row.getCarLicensePlate()).thenReturn(null);
+        String noPlate = (String) method.invoke(rentalService, row, true);
+
+        assertEquals("   ", noModel);
+        assertEquals("   ", noPlate);
+    }
+
+    @Test
+    void splitServiceNames_whenNull_shouldReturnEmptyList() throws Exception {
+        java.lang.reflect.Method method = RentalService.class.getDeclaredMethod("splitServiceNames", String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        List<String> result = (List<String>) method.invoke(rentalService, new Object[]{null});
+
+        assertEquals(List.of(), result);
+    }
+
+    @Test
+    void rentalSearchCacheKey_equals_shouldReturnFalseWhenEachFieldDiffers() throws Exception {
+        Class<?> queryTypeClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
+                .filter(Class::isEnum)
+                .filter(c -> c.getSimpleName().equals("QueryType"))
+                .findFirst()
+                .orElseThrow();
+
+        Object jpql = java.util.Arrays.stream(queryTypeClass.getEnumConstants())
+                .filter(e -> e.toString().equals("JPQL"))
+                .findFirst()
+                .orElseThrow();
+        Object nativeType = java.util.Arrays.stream(queryTypeClass.getEnumConstants())
+                .filter(e -> e.toString().equals("NATIVE"))
+                .findFirst()
+                .orElseThrow();
+
+        Class<?> keyClass = java.util.Arrays.stream(RentalService.class.getDeclaredClasses())
+                .filter(c -> c.getSimpleName().equals("RentalSearchCacheKey"))
+                .findFirst()
+                .orElseThrow();
+
+        java.lang.reflect.Constructor<?> ctor = keyClass.getDeclaredConstructor(
+                String.class,
+                Long.class,
+                RentalStatus.class,
+                int.class,
+                int.class,
+                String.class,
+                queryTypeClass
+        );
+        ctor.setAccessible(true);
+
+        Object base = ctor.newInstance("toyota", 1L, RentalStatus.ACTIVE, 0, -1, "LIST[startTime,DESC]", jpql);
+
+        Object diffPage = ctor.newInstance("toyota", 1L, RentalStatus.ACTIVE, 1, -1, "LIST[startTime,DESC]", jpql);
+        Object diffSize = ctor.newInstance("toyota", 1L, RentalStatus.ACTIVE, 0, 99, "LIST[startTime,DESC]", jpql);
+        Object diffBrand = ctor.newInstance("bmw", 1L, RentalStatus.ACTIVE, 0, -1, "LIST[startTime,DESC]", jpql);
+        Object diffUser = ctor.newInstance("toyota", 2L, RentalStatus.ACTIVE, 0, -1, "LIST[startTime,DESC]", jpql);
+        Object diffStatus = ctor.newInstance("toyota", 1L, RentalStatus.COMPLETED, 0, -1, "LIST[startTime,DESC]", jpql);
+        Object diffSort = ctor.newInstance("toyota", 1L, RentalStatus.ACTIVE, 0, -1, "OTHER", jpql);
+        Object diffType = ctor.newInstance("toyota", 1L, RentalStatus.ACTIVE, 0, -1, "LIST[startTime,DESC]", nativeType);
+
+        assertEquals(false, base.equals(diffPage));
+        assertEquals(false, base.equals(diffSize));
+        assertEquals(false, base.equals(diffBrand));
+        assertEquals(false, base.equals(diffUser));
+        assertEquals(false, base.equals(diffStatus));
+        assertEquals(false, base.equals(diffSort));
+        assertEquals(false, base.equals(diffType));
+    }
     private RentalCreateRequest createRequest(Long userId, Long carId, List<Long> serviceIds) {
         RentalCreateRequest request = new RentalCreateRequest();
         request.setUserId(userId);
