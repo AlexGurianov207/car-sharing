@@ -129,7 +129,8 @@ class UserServiceTest {
         existing.setStatus(UserStatus.DELETED);
         when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
 
-        assertThrows(InvalidDataAccessApiUsageException.class, () -> userService.updateUser(1L, createRequest()));
+        UserCreateRequest request = createRequest();
+        assertThrows(InvalidDataAccessApiUsageException.class, () -> userService.updateUser(1L, request));
     }
 
     @Test
