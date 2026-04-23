@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -99,6 +100,24 @@ public class PaymentService {
         Payment updatedPayment = paymentRepository.save(payment);
 
         return paymentMapper.toResponse(updatedPayment);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void verifyExistingPaymentForLab(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new NotFoundException(PAYMENT_NOT_FOUND_MESSAGE + paymentId));
+
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            throw new InvalidDataAccessApiUsageException(
+                    "Cannot verify refunded payment with id: " + paymentId);
+        }
+
+        try {
+            Thread.sleep(15000);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Verification interrupted for payment id: " + paymentId, ex);
+        }
     }
 
     @Transactional
