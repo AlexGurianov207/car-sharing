@@ -88,7 +88,8 @@ public class PaymentTaskRegistryService {
         }
 
         private AsyncTaskStatusResponse toResponse() {
-            return new AsyncTaskStatusResponse(taskId, status, paymentId, errorMessage, createdAt, startedAt, finishedAt);
+            return new AsyncTaskStatusResponse(taskId, status,
+                    paymentId, errorMessage, createdAt, startedAt, finishedAt);
         }
     }
 }
