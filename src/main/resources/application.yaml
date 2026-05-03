@@ -1,7 +1,10 @@
 server:
-  port: 8080
+  port: 8082
 
 spring:
+  profiles:
+    default: local
+
   application:
     name: carsharing
 
@@ -19,3 +22,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+
+app:
+  auth:
+    admin:
+      login: ${ADMIN_LOGIN:admin}
+      password: ${ADMIN_PASSWORD:Admin123!}

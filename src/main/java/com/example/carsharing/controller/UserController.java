@@ -3,6 +3,7 @@ package com.example.carsharing.controller;
 import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
 import com.example.carsharing.model.UserStatus;
+import com.example.carsharing.security.CurrentAccessService;
 import com.example.carsharing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +36,13 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final CurrentAccessService currentAccessService;
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current user profile")
+    public UserResponse getCurrentUser(Authentication authentication) {
+        return userService.getUserById(currentAccessService.requireCurrentUserId(authentication));
+    }
 
     @GetMapping
     @Operation(summary = "Get all users")

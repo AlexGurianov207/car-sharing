@@ -3,6 +3,7 @@ package com.example.carsharing.controller;
 import com.example.carsharing.dto.AsyncTaskStartResponse;
 import com.example.carsharing.dto.AsyncTaskStatusResponse;
 import com.example.carsharing.dto.PaymentResponse;
+import com.example.carsharing.security.CurrentAccessService;
 import com.example.carsharing.service.AsyncPaymentTaskService;
 import com.example.carsharing.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,16 +33,31 @@ public class PaymentController {
 
     private final PaymentService paymentService;
     private final AsyncPaymentTaskService asyncPaymentTaskService;
+    private final CurrentAccessService currentAccessService;
 
     @GetMapping
     @Operation(summary = "Get all payments")
-    public List<PaymentResponse> getAllPayments() {
+    public List<PaymentResponse> getAllPayments(Authentication authentication) {
+        if (!currentAccessService.isAdmin(authentication)) {
+            return paymentService.getPaymentsByUserId(currentAccessService.requireCurrentUserId(authentication));
+        }
         return paymentService.getAllPayments();
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current user payments")
+    public List<PaymentResponse> getCurrentUserPayments(Authentication authentication) {
+        return paymentService.getPaymentsByUserId(currentAccessService.requireCurrentUserId(authentication));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get payment by ID")
-    public PaymentResponse getPaymentById(@PathVariable @Positive(message = "Payment ID must be positive") Long id) {
+    public PaymentResponse getPaymentById(
+            @PathVariable @Positive(message = "Payment ID must be positive") Long id,
+            Authentication authentication) {
+        if (!currentAccessService.isAdmin(authentication)) {
+            return paymentService.getPaymentByIdAndUserId(id, currentAccessService.requireCurrentUserId(authentication));
+        }
         return paymentService.getPaymentById(id);
     }
 

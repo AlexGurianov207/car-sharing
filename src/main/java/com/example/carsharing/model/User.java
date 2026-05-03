@@ -34,6 +34,9 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    @Column(name = "password_hash", nullable = false, length = 100)
+    private String passwordHash;
+
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
@@ -43,9 +46,13 @@ public class User {
     @Column(name = "registration_date", nullable = false)
     private LocalDateTime registrationDate;
 
-    @Column(nullable = false, columnDefinition = "user_status")
+    @Column(nullable = false, length = 32)
     @Enumerated(EnumType.STRING)
     private UserStatus status;
+
+    @Column(length = 20)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 
     @OneToMany(mappedBy = "user")
     @ToString.Exclude
@@ -56,6 +63,9 @@ public class User {
         registrationDate = LocalDateTime.now();
         if (status == null) {
             status = UserStatus.ACTIVE;
+        }
+        if (role == null) {
+            role = UserRole.USER;
         }
     }
 }

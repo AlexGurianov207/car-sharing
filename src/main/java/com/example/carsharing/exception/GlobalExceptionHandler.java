@@ -8,6 +8,7 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -50,6 +51,15 @@ public class GlobalExceptionHandler {
     ) {
         log.warn("[EX] {} {} -> 409: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI(), List.of());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            AccessDeniedException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("[EX] {} {} -> 403: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), List.of());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

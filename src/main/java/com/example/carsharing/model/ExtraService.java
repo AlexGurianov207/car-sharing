@@ -35,7 +35,7 @@ public class ExtraService {
     @Column(name = "price_per_day", nullable = false)
     private Double pricePerDay;
 
-    @Column(nullable = false, columnDefinition = "service_category")
+    @Column(nullable = false, length = 32)
     @Enumerated(EnumType.STRING)
     private ServiceCategory category;
 

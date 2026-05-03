@@ -3,6 +3,7 @@ package com.example.carsharing.service.mapper;
 import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
 import com.example.carsharing.model.User;
+import com.example.carsharing.model.UserRole;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -28,6 +29,7 @@ public class UserMapper {
         response.setDriverLicense(user.getDriverLicense());
         response.setRegistrationDate(user.getRegistrationDate());
         response.setStatus(user.getStatus().name());
+        response.setRole((user.getRole() == null ? UserRole.USER : user.getRole()).name());
         return response;
     }
 }

@@ -31,4 +31,7 @@ public class UserResponse {
 
     @Schema(description = "User status", example = "ACTIVE")
     private String status;
+
+    @Schema(description = "User role", example = "USER")
+    private String role;
 }

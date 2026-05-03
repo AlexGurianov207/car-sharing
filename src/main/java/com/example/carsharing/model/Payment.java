@@ -41,7 +41,7 @@ public class Payment {
     @Column(name = "payment_date", nullable = false)
     private LocalDateTime paymentDate;
 
-    @Column(nullable = false, columnDefinition = "payment_status")
+    @Column(nullable = false, length = 32)
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 

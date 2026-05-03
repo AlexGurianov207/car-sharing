@@ -36,11 +36,11 @@ public class Car {
     @Column(name = "license_plate", nullable = false, unique = true, length = 10)
     private String licensePlate;
 
-    @Column(nullable = false, columnDefinition = "car_status")
+    @Column(nullable = false, length = 32)
     @Enumerated(EnumType.STRING)
     private CarStatus status;
 
-    @Column(nullable = false)
+    @Column(name = "car_year", nullable = false)
     private Integer year;
 
     @Column(name = "price_per_hour", nullable = false)

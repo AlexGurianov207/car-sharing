@@ -88,6 +88,20 @@ public class PaymentService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> getPaymentsByUserId(Long userId) {
+        return paymentRepository.findByRentalUserId(userId).stream()
+                .map(paymentMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentResponse getPaymentByIdAndUserId(Long id, Long userId) {
+        Payment payment = paymentRepository.findByIdAndRentalUserId(id, userId)
+                .orElseThrow(() -> new NotFoundException(PAYMENT_NOT_FOUND_MESSAGE + id));
+        return paymentMapper.toResponse(payment);
+    }
+
     public PaymentResponse refundPayment(Long id) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(PAYMENT_NOT_FOUND_MESSAGE + id));

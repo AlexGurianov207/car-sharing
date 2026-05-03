@@ -534,13 +534,7 @@ public class RentalService {
             throw new NoSuchElementException("User not found with id: " + userId);
         }
 
-        List<Rental> rentals = rentalRepository.findByUserId(userId);
-
-        if (rentals.isEmpty()) {
-            throw new NoSuchElementException("No rentals found for user with id: " + userId);
-        }
-
-        return rentals.stream()
+        return rentalRepository.findByUserId(userId).stream()
                 .map(rentalMapper::toResponse)
                 .toList();
     }

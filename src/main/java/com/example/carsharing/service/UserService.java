@@ -4,6 +4,7 @@ import com.example.carsharing.dto.UserCreateRequest;
 import com.example.carsharing.dto.UserResponse;
 import com.example.carsharing.exception.NotFoundException;
 import com.example.carsharing.model.User;
+import com.example.carsharing.model.UserRole;
 import com.example.carsharing.model.UserStatus;
 import com.example.carsharing.repository.RentalRepository;
 import com.example.carsharing.repository.UserRepository;
@@ -11,6 +12,7 @@ import com.example.carsharing.service.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -25,8 +27,10 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final RentalRepository rentalRepository;
+    private final PasswordEncoder passwordEncoder;
 
     private static final String USER_NOT_FOUND_MESSAGE = "User not found with id: ";
+    private static final String DEFAULT_USER_PASSWORD = "Welcome123!";
 
     public UserResponse createUser(UserCreateRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -39,6 +43,8 @@ public class UserService {
         }
 
         User user = userMapper.toEntity(request);
+        user.setPasswordHash(passwordEncoder.encode(DEFAULT_USER_PASSWORD));
+        user.setRole(UserRole.USER);
         User savedUser = userRepository.save(user);
         return userMapper.toResponse(savedUser);
     }

@@ -4,6 +4,7 @@ import com.example.carsharing.dto.BulkRentalResponse;
 import com.example.carsharing.dto.RentalCreateRequest;
 import com.example.carsharing.dto.RentalResponse;
 import com.example.carsharing.model.RentalStatus;
+import com.example.carsharing.security.CurrentAccessService;
 import com.example.carsharing.service.RentalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,30 +39,52 @@ import java.util.List;
 public class RentalController {
 
     private final RentalService rentalService;
+    private final CurrentAccessService currentAccessService;
 
     @GetMapping("/{id}")
     @Operation(summary = "Get rental by ID")
-    public RentalResponse getRentalById(@PathVariable @Positive(message = "Rental ID must be positive") Long id) {
-        return rentalService.getRentalById(id);
+    public RentalResponse getRentalById(
+            @PathVariable @Positive(message = "Rental ID must be positive") Long id,
+            Authentication authentication) {
+        RentalResponse response = rentalService.getRentalById(id);
+        currentAccessService.requireAdminOrOwner(authentication, response.getUserId());
+        return response;
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current user rentals")
+    public List<RentalResponse> getCurrentUserRentals(Authentication authentication) {
+        return rentalService.getUserRentals(currentAccessService.requireCurrentUserId(authentication));
     }
 
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get rentals by user ID")
     public List<RentalResponse> getUserRentals(
-            @PathVariable @Positive(message = "User ID must be positive") Long userId) {
+            @PathVariable @Positive(message = "User ID must be positive") Long userId,
+            Authentication authentication) {
+        currentAccessService.requireAdminOrOwner(authentication, userId);
         return rentalService.getUserRentals(userId);
     }
 
     @GetMapping("/car/{carId}")
     @Operation(summary = "Get rentals by car ID")
     public List<RentalResponse> getCarRentals(
-            @PathVariable @Positive(message = "Car ID must be positive") Long carId) {
+            @PathVariable @Positive(message = "Car ID must be positive") Long carId,
+            Authentication authentication) {
+        if (!currentAccessService.isAdmin(authentication)) {
+            throw new AccessDeniedException("Only administrators can access car rental history");
+        }
         return rentalService.getCarRentals(carId);
     }
 
     @GetMapping("/active")
     @Operation(summary = "Get active rentals")
-    public List<RentalResponse> getActiveRentals() {
+    public List<RentalResponse> getActiveRentals(Authentication authentication) {
+        if (!currentAccessService.isAdmin(authentication)) {
+            return rentalService.getUserRentals(currentAccessService.requireCurrentUserId(authentication)).stream()
+                    .filter(rental -> "ACTIVE".equals(rental.getStatus()))
+                    .toList();
+        }
         return rentalService.getActiveRentals();
     }
 
@@ -92,7 +117,8 @@ public class RentalController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create rental")
-    public RentalResponse createRental(@Valid @RequestBody RentalCreateRequest request) {
+    public RentalResponse createRental(@Valid @RequestBody RentalCreateRequest request, Authentication authentication) {
+        currentAccessService.requireOwnRentalRequest(authentication, request.getUserId());
         return rentalService.createRental(request);
     }
 
@@ -125,7 +151,11 @@ public class RentalController {
 
     @PatchMapping("/{id}/complete")
     @Operation(summary = "Complete rental")
-    public RentalResponse completeRental(@PathVariable @Positive(message = "Rental ID must be positive") Long id) {
+    public RentalResponse completeRental(
+            @PathVariable @Positive(message = "Rental ID must be positive") Long id,
+            Authentication authentication) {
+        RentalResponse response = rentalService.getRentalById(id);
+        currentAccessService.requireAdminOrOwner(authentication, response.getUserId());
         return rentalService.completeRental(id);
     }
 
