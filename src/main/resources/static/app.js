@@ -560,10 +560,22 @@ function App() {
 
     function openCarDetails(carId) {
         setSelectedCarId(carId);
-        const target = document.getElementById("car-focus");
+        const target = document.getElementById(session ? "car-focus" : "guest-detail");
         if (target) {
             target.scrollIntoView({ behavior: "smooth", block: "start" });
         }
+    }
+
+    function openEntityDetails(type, id) {
+        setSelectedEntity({ type, id });
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                const target = document.getElementById("entity-detail");
+                if (target) {
+                    target.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+            });
+        });
     }
 
     function startBooking(car) {
@@ -737,7 +749,7 @@ function App() {
                                         key=${rental.id}
                                         title=${`#${rental.id} · ${rental.carInfo}`}
                                         subtitle=${rental.userFullName}
-                                        meta=${rental.status}
+                                        meta=${displayStatus(rental.status)}
                                     />
                                 `)}</div>`
                                 : html`<${EmptyState} text="Пока нет аренд." />`}
@@ -798,7 +810,6 @@ function App() {
                     <${Panel}
                         kicker="Каталог"
                         title="Машины в системе"
-                        text="Поиск и фильтрация работают мгновенно, без перезагрузки списка."
                     >
                         <${CarFilters}
                             filters=${catalogFilters}
@@ -817,7 +828,7 @@ function App() {
                                     key=${car.id}
                                     car=${car}
                                     compact=${true}
-                                    onDetails=${() => setSelectedEntity({ type: "car", id: car.id })}
+                                    onDetails=${() => openEntityDetails("car", car.id)}
                                     onPrimary=${() => editCar(car)}
                                     primaryLabel="Изменить"
                                     onSecondary=${() => deleteEntity("car", car.id)}
@@ -903,7 +914,7 @@ function App() {
                                     status=${rental.status}
                                     accent=${formatDate(rental.startTime)}
                                     chips=${rental.selectedServices || []}
-                                    onDetails=${() => setSelectedEntity({ type: "rental", id: rental.id })}
+                                    onDetails=${() => openEntityDetails("rental", rental.id)}
                                     primaryLabel=${rental.status === "ACTIVE" ? "Завершить" : ""}
                                     onPrimary=${rental.status === "ACTIVE" ? () => completeRental(rental.id) : null}
                                     secondaryLabel="Удалить"
@@ -971,7 +982,7 @@ function App() {
                                     status=${user.status}
                                     accent=${user.phoneNumber || "Без телефона"}
                                     chips=${[user.driverLicense]}
-                                    onDetails=${() => setSelectedEntity({ type: "user", id: user.id })}
+                                    onDetails=${() => openEntityDetails("user", user.id)}
                                     primaryLabel="Изменить"
                                     onPrimary=${() => editUser(user)}
                                     secondaryLabel="Удалить"
@@ -985,7 +996,7 @@ function App() {
                                                 type="button"
                                                 onClick=${() => changeUserStatus(user.id, status)}
                                             >
-                                                ${status}
+                                                ${displayStatus(status)}
                                             </button>
                                         `)}
                                     </div>
@@ -1059,7 +1070,7 @@ function App() {
                                     status=${service.isActive ? "ACTIVE" : "INACTIVE"}
                                     accent=${formatCurrency(service.pricePerDay)}
                                     chips=${service.description ? [service.description] : []}
-                                    onDetails=${() => setSelectedEntity({ type: "service", id: service.id })}
+                                    onDetails=${() => openEntityDetails("service", service.id)}
                                     primaryLabel="Изменить"
                                     onPrimary=${() => editService(service)}
                                     secondaryLabel="Удалить"
@@ -1108,7 +1119,7 @@ function App() {
                                     `Авто: ${formatCurrency(payment.carAmount)}`,
                                     `Опции: ${formatCurrency(payment.servicesAmount)}`
                                 ]}
-                                onDetails=${() => setSelectedEntity({ type: "payment", id: payment.id })}
+                                onDetails=${() => openEntityDetails("payment", payment.id)}
                                 primaryLabel=${payment.status === "COMPLETED" ? "Возврат" : "Проверить"}
                                 onPrimary=${payment.status === "COMPLETED" ? () => refundPayment(payment.id) : () => verifyPayment(payment.id)}
                                 secondaryLabel="Удалить"
@@ -1177,7 +1188,7 @@ function App() {
                                 ? html`
                                     <img className="showcase-image" src=${carArt(selectedCar)} alt=${`${selectedCar.brand} ${selectedCar.model}`} />
                                     <div className="detail-list">
-                                        <${DetailLine} label="Статус" value=${selectedCar.status} />
+                                        <${DetailLine} label="Статус" value=${displayStatus(selectedCar.status)} />
                                         <${DetailLine} label="Год" value=${String(selectedCar.year)} />
                                         <${DetailLine} label="Цена" value=${`${formatCurrency(selectedCar.pricePerHour)} / час`} />
                                     </div>
@@ -1278,7 +1289,7 @@ function App() {
                                     status=${rental.status}
                                     accent=${rental.endTime ? formatDate(rental.endTime) : "В пути"}
                                     chips=${rental.selectedServices || []}
-                                    onDetails=${() => setSelectedEntity({ type: "rental", id: rental.id })}
+                                    onDetails=${() => openEntityDetails("rental", rental.id)}
                                     primaryLabel=${rental.status === "ACTIVE" ? "Завершить аренду" : ""}
                                     onPrimary=${rental.status === "ACTIVE" ? () => completeRental(rental.id) : null}
                                 />
@@ -1326,7 +1337,7 @@ function App() {
                                         `Авто: ${formatCurrency(payment.carAmount)}`,
                                         `Опции: ${formatCurrency(payment.servicesAmount)}`
                                     ]}
-                                    onDetails=${() => setSelectedEntity({ type: "payment", id: payment.id })}
+                                    onDetails=${() => openEntityDetails("payment", payment.id)}
                                 />
                             `)}
                         </div>
@@ -1353,7 +1364,7 @@ function App() {
                                 <${DetailLine} label="Email" value=${data.profile.email} />
                                 <${DetailLine} label="Телефон" value=${data.profile.phoneNumber || "Не указан"} />
                                 <${DetailLine} label="Права" value=${data.profile.driverLicense || "Не указаны"} />
-                                <${DetailLine} label="Статус" value=${data.profile.status} />
+                                <${DetailLine} label="Статус" value=${displayStatus(data.profile.status)} />
                             </div>
                         `
                         : html`<${EmptyState} text="Профиль пока недоступен." />`}
@@ -1420,23 +1431,18 @@ function GuestView(props) {
                     </div>
                 </div>
                 <div className="hero-stage">
-                    ${selectedCar
-                        ? html`
-                            <div className="hero-car-card">
-                                <img className="showcase-image" src=${carArt(selectedCar)} alt=${`${selectedCar.brand} ${selectedCar.model}`} />
-                                <div className="hero-car-meta">
-                                    <strong>${selectedCar.brand} ${selectedCar.model}</strong>
-                                    <span>${selectedCar.licensePlate}</span>
-                                    <span>${formatCurrency(selectedCar.pricePerHour)} / час</span>
-                                </div>
-                            </div>
-                        `
-                        : html`
-                            <div className="hero-placeholder">
-                                <strong>Каталог загружается</strong>
-                                <span>Выберите машину, и она появится здесь.</span>
-                            </div>
-                        `}
+                    <div className="hero-car-card">
+                        <img
+                            className="showcase-image"
+                            src=${carArt(selectedCar || cars[0] || { brand: "DriveFlow", model: "City", licensePlate: "RENT-01" })}
+                            alt=${selectedCar ? `${selectedCar.brand} ${selectedCar.model}` : "Каталог автомобилей"}
+                        />
+                        <div className="hero-car-meta">
+                            <strong>Каталог открыт без входа</strong>
+                            <span>Сравнивайте автомобили, цены и доступные опции.</span>
+                            <span>Для оформления поездки достаточно войти в аккаунт.</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -1458,7 +1464,7 @@ function GuestView(props) {
                     <${SelectField}
                         label="Статус"
                         value=${filters.status}
-                        options=${[{ value: "", label: "Все" }].concat(CAR_STATUSES.map((item) => ({ value: item, label: item })))}
+                        options=${[{ value: "", label: "Все" }].concat(CAR_STATUSES.map((item) => ({ value: item, label: displayStatus(item) })))}
                         onChange=${(value) => onFilterChange("status", value)}
                     />
                     <button className="ghost-button wide" type="button" onClick=${onResetFilters}>Сбросить</button>
@@ -1483,7 +1489,7 @@ function GuestView(props) {
                 />
             </section>
 
-            <section className="surface-panel detail-surface">
+            <section id="guest-detail" className="surface-panel detail-surface">
                 <div className="surface-head">
                     <div>
                         <span className="eyebrow">Подробнее</span>
@@ -1687,7 +1693,7 @@ function EntityCard(props) {
 function FloatingDetail(props) {
     const { entity, onClose } = props;
     return html`
-        <aside className="floating-detail">
+        <aside id="entity-detail" className="floating-detail">
             <div className="floating-head">
                 <div>
                     <span className="eyebrow">${entity.kicker}</span>

@@ -1,17 +1,17 @@
 server:
-  port: 8082
+  port: ${SERVER_PORT:8082}
 
 spring:
   profiles:
-    default: local
+    default: ${SPRING_PROFILES_DEFAULT:local}
 
   application:
     name: carsharing
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/car_sharing?stringtype=unspecified
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/car_sharing?stringtype=unspecified}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
