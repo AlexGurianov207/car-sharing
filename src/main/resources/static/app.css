@@ -145,6 +145,13 @@ p {
 .ghost-button {
     padding: 14px 22px;
     font-weight: 700;
+    min-height: 54px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
 }
 
 .primary-button {
@@ -225,11 +232,38 @@ p {
 .stats-inline {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 16px;
 }
 
 .hero-actions {
     margin-top: 28px;
+}
+
+.hero-actions,
+.button-row,
+.inline-actions,
+.topbar-actions,
+.pagination {
+    column-gap: 24px;
+    row-gap: 18px;
+    align-items: center;
+}
+
+.button-row {
+    margin-top: 8px;
+}
+
+.button-row > button,
+.inline-actions > button,
+.topbar-actions > button,
+.pagination > button {
+    flex: 0 1 auto;
+}
+
+.chip-cloud,
+.chips-select {
+    column-gap: 18px;
+    row-gap: 14px;
 }
 
 .hero-tags {
@@ -321,6 +355,7 @@ p {
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    flex-wrap: wrap;
 }
 
 .surface-head {
@@ -427,6 +462,9 @@ p {
 .service-chip {
     background: rgba(15, 23, 42, 0.06);
     color: var(--text);
+    max-width: 100%;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
 }
 
 .service-chip.muted {
@@ -635,7 +673,7 @@ p {
 .toggle-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 14px;
     margin-bottom: 18px;
 }
 
@@ -718,6 +756,8 @@ p {
 
 .chip-toggle {
     background: rgba(15, 23, 42, 0.05);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
 }
 
 .inline-actions {
@@ -819,6 +859,18 @@ p {
 
     .tab-row {
         justify-content: flex-start;
+    }
+
+    .button-row,
+    .topbar-actions,
+    .pagination {
+        align-items: stretch;
+    }
+
+    .button-row > button,
+    .topbar-actions > button,
+    .pagination > button {
+        flex: 1 1 180px;
     }
 
     .floating-detail {
