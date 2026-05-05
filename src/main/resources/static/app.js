@@ -1412,37 +1412,16 @@ function GuestView(props) {
 
     return html`
         <main className="guest-page">
-            <section className="hero-block">
-                <div className="hero-copy">
-                    <span className="eyebrow">Городской каршеринг</span>
-                    <h1>Автомобиль на час, день или весь уикенд</h1>
-                    <p>
-                        Витрина открыта сразу: можно сравнить машины, посмотреть комплектацию
-                        и подобрать удобный вариант до входа в аккаунт.
-                    </p>
-                    <div className="hero-actions">
-                        <button className="primary-button" onClick=${onOpenLogin}>Войти</button>
-                        <button className="secondary-button" onClick=${onOpenRegister}>Регистрация</button>
-                    </div>
-                    <div className="hero-tags">
-                        <span>Без офиса</span>
-                        <span>По минутам и часам</span>
-                        <span>Опции уже на машине</span>
+            <section className="guest-auth-strip">
+                <div className="guest-auth-brand">
+                    <div>
+                        <strong>DriveFlow</strong>
+                        <span>${cars.length} машин · ${services.length} опций</span>
                     </div>
                 </div>
-                <div className="hero-stage">
-                    <div className="hero-car-card">
-                        <img
-                            className="showcase-image"
-                            src=${carArt(selectedCar || cars[0] || { brand: "DriveFlow", model: "City", licensePlate: "RENT-01" })}
-                            alt=${selectedCar ? `${selectedCar.brand} ${selectedCar.model}` : "Каталог автомобилей"}
-                        />
-                        <div className="hero-car-meta">
-                            <strong>Каталог открыт без входа</strong>
-                            <span>Сравнивайте автомобили, цены и доступные опции.</span>
-                            <span>Для оформления поездки достаточно войти в аккаунт.</span>
-                        </div>
-                    </div>
+                <div className="guest-auth-actions">
+                    <button className="primary-button" onClick=${onOpenLogin}>Войти</button>
+                    <button className="secondary-button" onClick=${onOpenRegister}>Регистрация</button>
                 </div>
             </section>
 
@@ -1536,16 +1515,16 @@ function AuthScreen(props) {
     return html`
         <main className="auth-page">
             <section className="auth-stage">
-                <div className="auth-brand">
-                    <span className="eyebrow">DriveFlow</span>
-                    <h1>${isRegister ? "Создайте аккаунт" : "Добро пожаловать"}</h1>
-                    <p>
-                        Войдите, чтобы бронировать машины, смотреть историю поездок
-                        и управлять своими платежами.
-                    </p>
-                    <button className="ghost-button" onClick=${onBack}>Вернуться к просмотру</button>
-                </div>
-                <div className="auth-card">
+                <div className="auth-card auth-card-solo">
+                    <div className="auth-card-head">
+                        <div className="guest-auth-brand">
+                            <div>
+                                <strong>DriveFlow</strong>
+                                <span>${isRegister ? "Регистрация" : "Вход"}</span>
+                            </div>
+                        </div>
+                        <button className="ghost-button auth-back-button" type="button" onClick=${onBack}>Назад</button>
+                    </div>
                     <div className="toggle-row">
                         <button className=${`toggle-button ${!isRegister ? "active" : ""}`} onClick=${() => onModeChange("login")}>Вход</button>
                         <button className=${`toggle-button ${isRegister ? "active" : ""}`} onClick=${() => onModeChange("register")}>Регистрация</button>
