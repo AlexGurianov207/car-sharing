@@ -506,7 +506,6 @@ p {
 .stat-card,
 .mini-row,
 .detail-layout,
-.auth-stage,
 .topbar {
     background: var(--surface-strong);
 }
