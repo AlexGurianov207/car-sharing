@@ -30,7 +30,8 @@ public class SecurityConfig {
                                 "/favicon.ico",
                                 "/webjars/**",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/actuator/health/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/admin/login", "/api/auth/logout")
                         .permitAll()
