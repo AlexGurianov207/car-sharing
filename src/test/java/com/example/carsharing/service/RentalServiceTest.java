@@ -593,11 +593,13 @@ class RentalServiceTest {
     }
 
     @Test
-    void getUserRentals_whenEmpty_shouldThrow() {
+    void getUserRentals_whenEmpty_shouldReturnEmptyList() {
         when(userRepository.existsById(1L)).thenReturn(true);
         when(rentalRepository.findByUserId(1L)).thenReturn(List.of());
 
-        assertThrows(java.util.NoSuchElementException.class, () -> rentalService.getUserRentals(1L));
+        List<RentalResponse> result = rentalService.getUserRentals(1L);
+
+        assertEquals(0, result.size());
     }
 
     @Test
