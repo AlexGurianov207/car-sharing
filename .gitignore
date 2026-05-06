@@ -34,3 +34,6 @@ build/
 
 # Runtime logs
 logs/
+
+# Local runtime database
+data/
