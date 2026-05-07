@@ -23,6 +23,6 @@ COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8082
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD-SHELL "curl -fsS http://localhost:${SERVER_PORT:-8082}/actuator/health || exit 1"
+  CMD curl -fsS http://localhost:${SERVER_PORT:-${PORT:-8082}}/actuator/health || exit 1
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
