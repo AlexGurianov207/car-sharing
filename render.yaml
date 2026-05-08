@@ -5,17 +5,33 @@ services:
     plan: free
     region: frankfurt
     branch: main
+    autoDeployTrigger: off
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /actuator/health
-    autoDeployTrigger: off
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: docker
-      - key: SPRING_DATASOURCE_URL
+      - key: DB_HOST
         fromDatabase:
           name: car-sharing-db
-          property: connectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: car-sharing-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: car-sharing-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: car-sharing-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: car-sharing-db
+          property: password
       - key: ADMIN_LOGIN
         value: admin
       - key: ADMIN_PASSWORD
