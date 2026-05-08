@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: car-sharing
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: off
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: docker
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: car-sharing-db
+          property: connectionString
+      - key: ADMIN_LOGIN
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+
+databases:
+  - name: car-sharing-db
+    plan: free
+    region: frankfurt
+    databaseName: car_sharing
+    user: carsharing
+    postgresMajorVersion: "16"
