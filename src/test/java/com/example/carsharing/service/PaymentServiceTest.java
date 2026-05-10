@@ -211,6 +211,45 @@ class PaymentServiceTest {
     }
 
     @Test
+    void getPaymentsByUserId_shouldMapUserPayments() {
+        Payment payment = new Payment();
+        PaymentResponse expected = new PaymentResponse();
+        when(paymentRepository.findByRentalUserId(7L)).thenReturn(List.of(payment));
+        when(paymentMapper.toResponse(payment)).thenReturn(expected);
+
+        List<PaymentResponse> actual = paymentService.getPaymentsByUserId(7L);
+
+        assertEquals(1, actual.size());
+        assertEquals(expected, actual.get(0));
+    }
+
+    @Test
+    void getPaymentByIdAndUserId_whenFound_shouldReturnMappedResponse() {
+        Payment payment = new Payment();
+        PaymentResponse expected = new PaymentResponse();
+        when(paymentRepository.findByIdAndRentalUserId(5L, 7L)).thenReturn(Optional.of(payment));
+        when(paymentMapper.toResponse(payment)).thenReturn(expected);
+
+        PaymentResponse actual = paymentService.getPaymentByIdAndUserId(5L, 7L);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void getPaymentByIdAndUserId_whenMissing_shouldThrow() {
+        when(paymentRepository.findByIdAndRentalUserId(5L, 7L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> paymentService.getPaymentByIdAndUserId(5L, 7L));
+    }
+
+    @Test
+    void refundPayment_whenMissing_shouldThrow() {
+        when(paymentRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> paymentService.refundPayment(5L));
+    }
+
+    @Test
     void refundPayment_whenNotCompleted_shouldThrow() {
         Payment payment = new Payment();
         payment.setStatus(PaymentStatus.REFUNDED);
@@ -259,6 +298,30 @@ class PaymentServiceTest {
 
         verify(rentalRepository, never()).save(org.mockito.ArgumentMatchers.any());
         verify(paymentRepository).delete(payment);
+    }
+
+    @Test
+    void deletePayment_whenMissing_shouldThrow() {
+        when(paymentRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> paymentService.deletePayment(1L));
+    }
+
+    @Test
+    void verifyExistingPaymentForLab_whenPaymentMissing_shouldThrow() {
+        when(paymentRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> paymentService.verifyExistingPaymentForLab(1L));
+    }
+
+    @Test
+    void verifyExistingPaymentForLab_whenPaymentRefunded_shouldThrowWithoutDelay() {
+        Payment payment = new Payment();
+        payment.setStatus(PaymentStatus.REFUNDED);
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+
+        assertThrows(InvalidDataAccessApiUsageException.class,
+                () -> paymentService.verifyExistingPaymentForLab(1L));
     }
 
     private PaymentCreateRequest createRequest() {
