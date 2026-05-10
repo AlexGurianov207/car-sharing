@@ -33,6 +33,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       ADMIN_LOGIN: ${ADMIN_LOGIN:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123!}
+      USER_INITIAL_CREDENTIAL: ${USER_INITIAL_CREDENTIAL:-user-initial-credential}
     ports:
       - "${SERVER_PORT:-8082}:8082"
     healthcheck:

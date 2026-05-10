@@ -36,6 +36,8 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         sync: false
+      - key: USER_INITIAL_CREDENTIAL
+        sync: false
 
 databases:
   - name: car-sharing-db

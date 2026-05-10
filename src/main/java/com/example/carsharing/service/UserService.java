@@ -10,6 +10,7 @@ import com.example.carsharing.repository.RentalRepository;
 import com.example.carsharing.repository.UserRepository;
 import com.example.carsharing.service.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,7 +31,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     private static final String USER_NOT_FOUND_MESSAGE = "User not found with id: ";
-    private static final String DEFAULT_USER_PASSWORD = "Welcome123!";
+
+    @Value("${app.auth.user.initial-credential}")
+    private String initialUserCredential;
 
     public UserResponse createUser(UserCreateRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -43,7 +46,7 @@ public class UserService {
         }
 
         User user = userMapper.toEntity(request);
-        user.setPasswordHash(passwordEncoder.encode(DEFAULT_USER_PASSWORD));
+        user.setPasswordHash(passwordEncoder.encode(initialUserCredential));
         user.setRole(UserRole.USER);
         User savedUser = userRepository.save(user);
         return userMapper.toResponse(savedUser);

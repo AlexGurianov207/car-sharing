@@ -25,6 +25,8 @@ spring:
 
 app:
   auth:
+    user:
+      initial-credential: ${USER_INITIAL_CREDENTIAL:user-initial-credential}
     admin:
       login: ${ADMIN_LOGIN:admin}
       password: ${ADMIN_PASSWORD:Admin123!}

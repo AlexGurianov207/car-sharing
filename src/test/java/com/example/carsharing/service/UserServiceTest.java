@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -70,7 +71,8 @@ class UserServiceTest {
         when(userRepository.existsByEmail("u@test.com")).thenReturn(false);
         when(userRepository.existsByDriverLicense("AB1234567")).thenReturn(false);
         when(userMapper.toEntity(request)).thenReturn(entity);
-        when(passwordEncoder.encode("Welcome123!")).thenReturn("encoded-password");
+        ReflectionTestUtils.setField(userService, "initialUserCredential", "test-user-credential");
+        when(passwordEncoder.encode("test-user-credential")).thenReturn("encoded-password");
         when(userRepository.save(entity)).thenReturn(saved);
         when(userMapper.toResponse(saved)).thenReturn(expected);
 
