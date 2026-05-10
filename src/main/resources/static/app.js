@@ -2083,21 +2083,11 @@ function normalizeSession(response) {
 
 let csrfTokenValue = null;
 
-function readCookie(name) {
-    const prefix = `${name}=`;
-    return document.cookie
-        .split(";")
-        .map((cookie) => cookie.trim())
-        .find((cookie) => cookie.startsWith(prefix))
-        ?.slice(prefix.length);
-}
-
 function requiresCsrf(method) {
     return !["GET", "HEAD", "OPTIONS", "TRACE"].includes(method);
 }
 
 async function ensureCsrfToken() {
-    csrfTokenValue = csrfTokenValue || readCookie("XSRF-TOKEN");
     if (csrfTokenValue) {
         return csrfTokenValue;
     }
@@ -2108,7 +2098,7 @@ async function ensureCsrfToken() {
     }
 
     const token = await response.json();
-    csrfTokenValue = token.token || readCookie("XSRF-TOKEN");
+    csrfTokenValue = token.token;
     return csrfTokenValue;
 }
 
