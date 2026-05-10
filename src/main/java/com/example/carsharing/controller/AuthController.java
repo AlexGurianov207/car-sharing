@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,6 +51,12 @@ public class AuthController {
     @Operation(summary = "Get current authenticated account")
     public AuthResponse me(Authentication authentication) {
         return authService.getCurrentUser(authentication);
+    }
+
+    @GetMapping("/csrf")
+    @Operation(summary = "Get CSRF token")
+    public CsrfToken csrf(CsrfToken csrfToken) {
+        return csrfToken;
     }
 
     @PostMapping("/logout")

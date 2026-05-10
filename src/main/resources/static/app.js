@@ -2081,12 +2081,47 @@ function normalizeSession(response) {
     };
 }
 
+let csrfTokenValue = null;
+
+function readCookie(name) {
+    const prefix = `${name}=`;
+    return document.cookie
+        .split(";")
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith(prefix))
+        ?.slice(prefix.length);
+}
+
+function requiresCsrf(method) {
+    return !["GET", "HEAD", "OPTIONS", "TRACE"].includes(method);
+}
+
+async function ensureCsrfToken() {
+    csrfTokenValue = csrfTokenValue || readCookie("XSRF-TOKEN");
+    if (csrfTokenValue) {
+        return csrfTokenValue;
+    }
+
+    const response = await fetch("/api/auth/csrf", { credentials: "same-origin" });
+    if (!response.ok) {
+        throw new Error(parseApiError(await response.text(), response.status));
+    }
+
+    const token = await response.json();
+    csrfTokenValue = token.token || readCookie("XSRF-TOKEN");
+    return csrfTokenValue;
+}
+
 async function api(url, method, body) {
+    const requestMethod = method || "GET";
     const options = {
-        method: method || "GET",
+        method: requestMethod,
         credentials: "same-origin",
         headers: {}
     };
+    if (requiresCsrf(requestMethod)) {
+        options.headers["X-XSRF-TOKEN"] = await ensureCsrfToken();
+    }
     if (body !== undefined) {
         options.headers["Content-Type"] = "application/json";
         options.body = JSON.stringify(body);
