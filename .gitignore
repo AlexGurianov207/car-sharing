@@ -35,5 +35,10 @@ build/
 # Runtime logs
 logs/
 
+# Local environment overrides
+.env
+.env.*
+.env.example
+
 # Local runtime database
 data/

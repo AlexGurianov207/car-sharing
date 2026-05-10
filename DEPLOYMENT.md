@@ -1,25 +1,5 @@
 # Deployment
 
-## Local Run
-
-Run without PostgreSQL, using the local H2 profile:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\run-local.ps1
-```
-
-Application URL:
-
-```text
-http://localhost:8082/
-```
-
-Healthcheck:
-
-```text
-http://localhost:8082/actuator/health
-```
-
 ## Docker Compose
 
 Docker Compose starts both the application and PostgreSQL:
@@ -32,6 +12,18 @@ Stop containers:
 
 ```powershell
 docker compose down
+```
+
+Application URL:
+
+```text
+http://localhost:8082/
+```
+
+Healthcheck:
+
+```text
+http://localhost:8082/actuator/health
 ```
 
 Services:
@@ -49,9 +41,7 @@ docker logs carsharing-db
 
 ## Environment Variables
 
-The main variables are listed in `.env.example`.
-
-For Docker Compose:
+For Docker Compose, you can create a local `.env` file if you want to override defaults:
 
 ```text
 SERVER_PORT=8082
@@ -60,18 +50,16 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 ADMIN_LOGIN=admin
 ADMIN_PASSWORD=Admin123!
+USER_INITIAL_CREDENTIAL=user-initial-credential
 SPRING_PROFILES_ACTIVE=docker
 ```
 
-For PaaS deployment, set:
+For Render deployment, `render.yaml` creates PostgreSQL and passes database values to the app.
+Set secret values in Render for:
 
 ```text
-SPRING_PROFILES_ACTIVE=docker
-SPRING_DATASOURCE_URL=<managed-postgres-jdbc-url>
-DB_USERNAME=<database-user>
-DB_PASSWORD=<database-password>
-ADMIN_LOGIN=<admin-login>
 ADMIN_PASSWORD=<admin-password>
+USER_INITIAL_CREDENTIAL=<initial-user-password>
 ```
 
 If the platform provides a `PORT` variable, the application will use it automatically.
@@ -81,13 +69,13 @@ If the platform provides a `PORT` variable, the application will use it automati
 GitHub Actions workflows:
 
 - `.github/workflows/sonar.yml` runs Maven verify and SonarCloud analysis.
-- `.github/workflows/ci-cd.yml` runs build, tests, Docker build, optional deploy, and healthcheck.
+- `.github/workflows/ci-cd.yml` runs build, tests, deploy to Render, and healthcheck.
 
 To enable deployment from GitHub Actions, add repository secrets:
 
 ```text
-DEPLOY_HOOK_URL=<PaaS deploy hook URL>
-APP_HEALTH_URL=<deployed app health URL, for example https://app.example.com/actuator/health>
+RENDER_DEPLOY_HOOK_URL=<Render deploy hook URL>
+RENDER_HEALTHCHECK_URL=<deployed app health URL, for example https://app.example.com/actuator/health>
 ```
 
-If these secrets are not configured, deployment is skipped and build/test/docker-build still run.
+If these secrets are not configured, the deploy job fails after build and tests.

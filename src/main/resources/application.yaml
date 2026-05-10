@@ -2,9 +2,6 @@ server:
   port: ${SERVER_PORT:${PORT:8082}}
 
 spring:
-  profiles:
-    default: ${SPRING_PROFILES_DEFAULT:local}
-
   application:
     name: carsharing
 
