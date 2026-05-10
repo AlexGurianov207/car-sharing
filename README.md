@@ -286,7 +286,7 @@ spring:
 
 ---
 
-## Лабораторная работа 8: Docker, Render, CI/CD
+## Docker, Render, CI/CD
 
 В проект добавлена инфраструктура для запуска и деплоя приложения с PostgreSQL.
 
@@ -369,8 +369,7 @@ RENDER_HEALTHCHECK_URL
 SONAR_TOKEN
 ```
 
-### Важные файлы для 8 лабы
-
+### Файлы
 - `Dockerfile`
 - `docker-compose.yml`
 - `render.yaml`
